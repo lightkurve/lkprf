@@ -22,7 +22,7 @@ pip install lkprf --upgrade
 
 ## Usage
 
-> :warning: **Note**: `lkprf` uses tuples to specify positions and uses the Python convention of `(row, column)`.
+> :question: **Note**: `lkprf` uses tuples to specify positions and uses the Python convention of `(row, column)`.
 
 To use the package you first initialize a PRF model based on the mission you want to use
 
@@ -52,7 +52,7 @@ prf.evaluate(targets=[(5, 5), (9, 9)], origin=(0, 0), shape=(11, 11))
 
 This will return an array with shape  `(2, 11, 11)`, which contains two `(11, 11)` images. The first image contains one target at location `(row=5, column=5)`. The second image contains one target at location `(row=9, column=9)`. You can pass in a list of any number of target tuples to create PRFs for each target. PRFs are normalized such that, if all target flux falls in a pixel, the total flux will be one.
 
-> :warning: **Note**: If the "target" doesn't appear in your image, make sure the `origin` and `shape` keywords would create an array that contains your target coordinates.
+> :question: **Note**: If the "target" doesn't appear in your image, make sure the `origin` and `shape` keywords would create an array that contains your target coordinates.
 
 Similarly you can get the gradient of the PRF
 
