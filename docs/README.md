@@ -1,10 +1,6 @@
 <a href="https://github.com/lightkurve/lkprf/actions/workflows/tests.yml"><img src="https://github.com/lightkurve/lkprf/workflows/pytest/badge.svg" alt="Test status"/></a>
 [![PyPI version](https://badge.fury.io/py/lkprf.svg)](https://badge.fury.io/py/lkprf)
 
-<p align="center">
-  <img src="https://github.com/lightkurve/lkprf/blob/main/docs/images/logo.png?raw=true" width="350" alt="lkprf logo">
-</p>
-
 # `lkPRF`
 
 `lkPRF` is a tool to work with PRF files from missions like NASA Kepler and [TESS](https://heasarc.gsfc.nasa.gov/docs/tess/). This tool enables you to load in PRF files from the engineering data, and evaluate them at given pixel positions.
