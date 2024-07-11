@@ -80,9 +80,11 @@ def download_kepler_prf_file(module: int, output: int):
 def build_tess_prf_file(camera: int, ccd: int):
     """Download a set of TESS PRF files for a given camera/ccd"""
 
-    def open_file(fname: str):
+    def open_file(url: str):
         """Open a TESS PRF file and correct the edges to 0"""
-        hdulist = fitsio.FITS(fname)
+        file_name = url.split('/')[-1]
+        _download_file(url, f"/tmp/{file_name}")
+        hdulist = fitsio.FITS(f"/tmp/{file_name}")
         data = hdulist[0].read()
         hdr = hdulist[0].read_header()
         aper = data > 0.0005  # cutout_model > np.percentile(prf, 50)
@@ -106,6 +108,7 @@ def build_tess_prf_file(camera: int, ccd: int):
     R, C = np.meshgrid([1, 513, 1025, 1536, 2048], [45, 557, 1069, 1580, 2092])
     if os.path.isfile(file_path):
         os.remove(file_path)
+
     hdulist = fitsio.FITS(file_path, mode="rw")
     for (
         r,
@@ -113,7 +116,7 @@ def build_tess_prf_file(camera: int, ccd: int):
     ) in zip(R.ravel(), C.ravel()):
         url = f"{tess_archive_url}cam{camera}_ccd{ccd}/tess{prefix}-prf-{camera}-{ccd}-row{r:04}-col{c:04}.fits"
         logger.info(f"Downloading CCD {ccd}, Camera {camera}, row {r}, column {c}")
-        data, hdr = open_file(url)
+        data, hdr = open_file(url=url)
         hdulist.write(data, header=hdr)
     hdulist.close()
     return
