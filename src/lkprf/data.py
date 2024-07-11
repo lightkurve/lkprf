@@ -52,10 +52,9 @@ def _download_file(url, file_path):
     """
     if not os.path.exists(file_path):
         try:
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
             response = requests.get(url)
             response.raise_for_status()  # Ensure the request was successful
-            if not os.path.isdir('/'.join(file_path.split('/')[:-1])):
-                os.mkdir('/'.join(file_path.split('/')[:-1]))
             with open(file_path, "wb") as f:
                 f.write(response.content)
         except requests.exceptions.HTTPError as http_err:
