@@ -94,8 +94,12 @@ class PRF(ABC):
                 for dr, dc in zip(delta_row.T, delta_col.T)
             ]
         )
+
+        prf[np.abs(prf) < 1e-6] = 0
+
         # Normalize to ensure no flux loss
-        prf /= prf.sum(axis=(1, 2))[:, None, None]
+        if (dx == 0) & (dy == 0):
+            prf /= prf.sum(axis=(1, 2))[:, None, None]
 
         # Insert values into final array of the correct shape
         ar = np.zeros((len(target_column), *shape))

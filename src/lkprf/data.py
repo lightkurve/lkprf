@@ -82,7 +82,7 @@ def build_tess_prf_file(camera: int, ccd: int):
 
     def open_file(url: str):
         """Open a TESS PRF file and correct the edges to 0"""
-        file_name = url.split('/')[-1]
+        file_name = url.split("/")[-1]
         _download_file(url, f"/tmp/{file_name}")
         hdulist = fitsio.FITS(f"/tmp/{file_name}")
         data = hdulist[0].read()

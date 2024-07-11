@@ -3,13 +3,13 @@
 import lkprf
 import numpy as np
 import matplotlib.pyplot as plt
-from lkprf import logger
 
 import os
 
 
 def is_github_actions():
     return os.getenv("GITHUB_ACTIONS") == "true"
+
 
 def test_prfs():
     """Test you can make a prf and it's fairly well centered"""
@@ -51,8 +51,9 @@ def test_prfs():
         assert not np.isclose(ar[0].sum(), 1)
         assert not np.isclose(ar[0].sum(), 0)
 
-        ar = prf.gradient(targets=(10, 10), origin=origin, shape=shape)
+        ar = prf.gradient(targets=(10, 10), origin=(0, 0), shape=(21, 21))
         assert isinstance(ar, tuple)
         assert ar[0].shape == (1, *shape)
-        assert (ar[0][0] < 0).any()
-        assert (ar[0][0] > 0).any()
+        for a in ar:
+            assert (a[0] < 0).any()
+            assert (a[0] > 0).any()
