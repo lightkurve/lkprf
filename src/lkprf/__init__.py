@@ -4,7 +4,7 @@ import logging
 
 PACKAGEDIR = os.path.abspath(os.path.dirname(__file__))
 
-version = "0.1.0"
+version = "1.0.0"
 logger = logging.getLogger("lkprf")
 
 from .data import *  # noqa
