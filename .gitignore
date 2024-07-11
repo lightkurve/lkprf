@@ -1,4 +1,4 @@
-src/lkprf/data
+src/lkprf/data/*.fits
 sandbox
 
 # Byte-compiled / optimized / DLL files
