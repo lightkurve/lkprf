@@ -99,6 +99,7 @@ class PRF(ABC):
 
         # Normalize to ensure no flux loss
         if (dx == 0) & (dy == 0):
+            # PRF model should sum to one
             prf /= prf.sum(axis=(1, 2))[:, None, None]
 
         # Insert values into final array of the correct shape
@@ -209,8 +210,8 @@ class PRF(ABC):
             np.asarray(cdelt2p),
         )
         PRFdata /= PRFdata.sum(axis=(1, 2))[:, None, None]
-        PRFcol = np.arange(0.5, np.shape(PRFdata[0])[1] + 0.5)
-        PRFrow = np.arange(0.5, np.shape(PRFdata[0])[0] + 0.5)
+        # PRFcol = np.arange(0.5, np.shape(PRFdata[0])[1] + 0.5)
+        # PRFrow = np.arange(0.5, np.shape(PRFdata[0])[0] + 0.5)
 
         PRFcol = np.arange(0, np.shape(PRFdata[0])[1] + 0)
         PRFrow = np.arange(0, np.shape(PRFdata[0])[0] + 0)
