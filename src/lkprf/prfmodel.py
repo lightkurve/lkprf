@@ -210,8 +210,6 @@ class PRF(ABC):
             np.asarray(cdelt2p),
         )
         PRFdata /= PRFdata.sum(axis=(1, 2))[:, None, None]
-        # PRFcol = np.arange(0.5, np.shape(PRFdata[0])[1] + 0.5)
-        # PRFrow = np.arange(0.5, np.shape(PRFdata[0])[0] + 0.5)
 
         PRFcol = np.arange(0, np.shape(PRFdata[0])[1] + 0)
         PRFrow = np.arange(0, np.shape(PRFdata[0])[0] + 0)
@@ -219,6 +217,10 @@ class PRF(ABC):
         # Shifts pixels so it is in pixel units centered on 0
         PRFcol = (PRFcol - np.size(PRFcol) / 2) * cdelt1p[0]
         PRFrow = (PRFrow - np.size(PRFrow) / 2) * cdelt2p[0]
+
+        PRFcol += 0.5
+        PRFrow += 0.5
+        
         (
             self.PRFrow,
             self.PRFcol,

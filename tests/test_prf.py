@@ -19,8 +19,8 @@ def test_prfs():
         shape = (21, 21)
         ar = prf.evaluate(targets=targets, origin=origin, shape=shape)
         R, C = np.mgrid[: ar.shape[1], : ar.shape[2]] + 0.5
-        assert np.isclose(np.average(R.ravel(), weights=ar[0].ravel()), 10, atol=0.05)
-        assert np.isclose(np.average(C.ravel(), weights=ar[0].ravel()), 10, atol=0.05)
+        assert np.isclose(np.average(R.ravel(), weights=ar[0].ravel()), 10.5, atol=0.05)
+        assert np.isclose(np.average(C.ravel(), weights=ar[0].ravel()), 10.5, atol=0.05)
         assert np.isclose(ar[0].sum(), 1)
         assert ar.shape == (1, *shape)
         if not is_github_actions():
@@ -34,7 +34,7 @@ def test_prfs():
                 vmax=0.2,
             )
             cbar = plt.colorbar(im, ax=ax)
-            ax.scatter(np.asarray(targets)[:, 1], np.asarray(targets)[:, 0], c="r")
+            #ax.scatter(np.asarray(targets)[:, 1], np.asarray(targets)[:, 0], c="r")
             ax.set(
                 xlim=(origin[1], origin[1] + shape[1] - 1),
                 ylim=(origin[0], origin[0] + shape[0] - 1),
