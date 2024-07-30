@@ -220,7 +220,7 @@ class PRF(ABC):
 
         PRFcol += 0.5
         PRFrow += 0.5
-        
+
         (
             self.PRFrow,
             self.PRFcol,

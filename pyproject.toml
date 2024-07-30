@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "lkprf"
-version = "1.0.2"
+version = "1.0.3"
 description = ""
 authors = ["TESS Science Support Center <tesshelp@bigbang.gsfc.nasa.gov>, Christina Hedges <christina.l.hedges@nasa.gov>"]
 license = "MIT"
