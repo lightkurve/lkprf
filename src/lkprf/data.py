@@ -104,6 +104,9 @@ def build_tess_prf_file(camera: int, ccd: int):
     prefix = _tess_prefixes[camera][ccd]
     filename = f"tess-prf-{camera}-{ccd}.fits"
     file_path = f"{PACKAGEDIR}/data/{filename}"
+    # ensure the file_path exists
+    if not os.path.exists(file_path):
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
     R, C = np.meshgrid([1, 513, 1025, 1536, 2048], [45, 557, 1069, 1580, 2092])
     if os.path.isfile(file_path):

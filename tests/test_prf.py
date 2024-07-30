@@ -34,7 +34,7 @@ def test_prfs():
                 vmax=0.2,
             )
             cbar = plt.colorbar(im, ax=ax)
-            #ax.scatter(np.asarray(targets)[:, 1], np.asarray(targets)[:, 0], c="r")
+            # ax.scatter(np.asarray(targets)[:, 1], np.asarray(targets)[:, 0], c="r")
             ax.set(
                 xlim=(origin[1], origin[1] + shape[1] - 1),
                 ylim=(origin[0], origin[0] + shape[0] - 1),
