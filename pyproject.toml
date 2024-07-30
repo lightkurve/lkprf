@@ -11,6 +11,7 @@ packages = [{include = "lkprf", from = "src"}]
 python = ">=3.8.1,<4.0"
 scipy = ">=1.8.0"
 fitsio = "^1.2.4"
+requests = "^2.32.3"
 
 [tool.poetry.group.dev.dependencies]
 jupyterlab = "^4.2.3"
