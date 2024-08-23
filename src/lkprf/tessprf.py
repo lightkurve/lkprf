@@ -10,20 +10,22 @@ from .prfmodel import PRF
 
 
 class TESSPRF(PRF):
-    """A TESSPRF class. The TESS PRF measurements are supersampled by a factor of 9."""
+    """A TESSPRF class. The TESS PRF measurements are supersampled by a factor of 9.
+    Two PRF models were produced, one for sectors 1-3 and a second set for sectors 4+ """
 
-    def __init__(self, camera: int, ccd: int):
+    def __init__(self, camera: int, ccd: int, sector: int = 4):
         super().__init__()
         self.camera = camera
         self.ccd = ccd
+        self.sector = sector
         self.mission = "TESS"
         self._prepare_prf()
 
     def __repr__(self):
-        return f"TESSPRF Object [Camera {self.camera}, CCD {self.ccd}]"
+        return f"TESSPRF Object [Camera {self.camera}, CCD {self.ccd}, Sector {self.sector}]"
 
     def _get_prf_data(self):
-        return get_tess_prf_file(camera=self.camera, ccd=self.ccd)
+        return get_tess_prf_file(camera=self.camera, ccd=self.ccd, sector=self.sector)
 
     def update_coordinates(self, targets: List[Tuple], shape: Tuple):
         row, column = self._unpack_targets(targets)
