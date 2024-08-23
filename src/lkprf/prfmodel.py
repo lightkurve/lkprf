@@ -63,7 +63,7 @@ class PRF(ABC):
         Parameters
         ----------
         targets : List of Tuples
-            Coordinates of the targets
+            Pixel coordinates of the targets
         origin : Tuple
             The origin of the image, combined with shape this sets the extent of the image
         shape : Tuple
@@ -247,13 +247,19 @@ class PRF(ABC):
         ref_row = row + 0.5 * rowdim
         supersamp_prf = np.zeros(self.PRFdata.shape[1:], dtype="float32")
 
-        for i in range(self.PRFdata.shape[0]):
-            prf_weight = np.sqrt(
-                (ref_column - self.crval1p[i]) ** 2 + (ref_row - self.crval2p[i]) ** 2
-            )
-            if prf_weight < min_prf_weight:
-                prf_weight = min_prf_weight
-            supersamp_prf += self.PRFdata[i] / prf_weight
+        # Find the 4 measurements nearest the desired locations
+        prf_weights = [
+            np.sqrt(
+                (ref_column - self.crval1p[i]) ** 2 + (ref_row - self.crval2p[i]) ** 2) 
+                for i in range(self.PRFdata.shape[0])
+                ]
+        idx = np.argpartition(prf_weights, 4)[:4]
+
+        for i in idx:
+            if prf_weights[i] < min_prf_weight:
+                prf_weights[i] = min_prf_weight
+            supersamp_prf += self.PRFdata[i] / prf_weights[i]
+
 
         supersamp_prf /= np.nansum(supersamp_prf) * self.cdelt1p[0] * self.cdelt2p[0]
         self.interpolate = RectBivariateSpline(self.PRFrow, self.PRFcol, supersamp_prf)
