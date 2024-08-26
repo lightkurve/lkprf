@@ -34,7 +34,7 @@ class TESSPRF(PRF):
                 LKPRFWarning,
             )
 
-        if ((np.atleast_1d(column) + shape[1]) > 2093).any():
+        if ((np.atleast_1d(column) + shape[1]) > 2092).any():
             warnings.warn(
                 "`targets` contains collateral pixels: Column(s) > 2093 ",
                 LKPRFWarning,
@@ -50,4 +50,40 @@ class TESSPRF(PRF):
                 LKPRFWarning,
             )
         self._update_coordinates(targets=targets, shape=shape)
+        return
+    
+
+    def _update_coordinates(self, targets: List[Tuple], shape: Tuple):
+        row, column = self._unpack_targets(targets)
+        # Set the row and column for the model. 
+        # Disallows models in the collateral pixels
+        row, column = np.atleast_1d(row), np.atleast_1d(column)
+        row = np.min([np.max([row, row**0 * 0], axis=0), row**0 * 2048], axis=0).mean()
+        column = np.min(
+            [np.max([column, column**0 * 45], axis=0), column**0 * 2092], axis=0
+        ).mean()
+
+        # interpolate the calibrated PRF shape to the target position
+        min_prf_weight = 1e-6
+        rowdim, coldim = shape[0], shape[1]
+        ref_column = column + 0.5 * coldim
+        ref_row = row + 0.5 * rowdim
+        supersamp_prf = np.zeros(self.PRFdata.shape[1:], dtype="float32")
+
+        # Find the 4 measurements nearest the desired locations
+        prf_weights = [
+            np.sqrt(
+                (ref_column - self.crval1p[i]) ** 2 + (ref_row - self.crval2p[i]) ** 2) 
+                for i in range(self.PRFdata.shape[0])
+                ]
+        idx = np.argpartition(prf_weights, 4)[:4]
+
+        for i in idx:
+            if prf_weights[i] < min_prf_weight:
+                prf_weights[i] = min_prf_weight
+            supersamp_prf += self.PRFdata[i] / prf_weights[i]
+
+
+        supersamp_prf /= np.nansum(supersamp_prf) * self.cdelt1p[0] * self.cdelt2p[0]
+        self.interpolate = RectBivariateSpline(self.PRFrow, self.PRFcol, supersamp_prf)
         return
