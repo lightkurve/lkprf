@@ -83,7 +83,7 @@ class KeplerPRF(PRF):
                 (ref_column - self.crval1p[i]) ** 2 + (ref_row - self.crval2p[i]) ** 2) 
                 for i in range(self.PRFdata.shape[0])
                 ]
-        idx = np.argpartition(prf_weights, 4)[:4]
+        idx = np.argpartition(prf_weights, 3)[:3]
 
         for i in idx:
             if prf_weights[i] < min_prf_weight:
