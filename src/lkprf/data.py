@@ -174,7 +174,7 @@ def get_kepler_prf_file(module: int, output: int):
     return hdulist
 
 
-def get_tess_prf_file(camera: int, ccd: int, sector: int):
+def get_tess_prf_file(camera: int, ccd: int, sector: int = 4):
     """Get a PRF file for a given camera/ccd/sector"""
     if sector <= 3:
         filename = f"tess-prf-cam{camera}-ccd{ccd}-sec1.fits"
