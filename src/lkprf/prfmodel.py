@@ -4,7 +4,6 @@ from abc import ABC, abstractmethod
 from typing import Tuple, List
 import numpy.typing as npt
 import numpy as np
-from scipy.interpolate import RectBivariateSpline
 
 
 class PRF(ABC):
@@ -63,11 +62,13 @@ class PRF(ABC):
         Parameters
         ----------
         targets : List of Tuples
-            Pixel coordinates of the targets
+            Pixel coordinates of the target(s).
         origin : Tuple
-            The origin of the image, combined with shape this sets the extent of the image
+            The (row, column) origin of the image in pixels.
+            Combined with shape this sets the extent of the image.
         shape : Tuple
-            The shape of the image, combined with the origin this sets the extent of the image
+            The (N_row, N_col) shape of the image. 
+            Combined with the origin this sets the extent of the image.
 
         Returns
         -------
@@ -75,7 +76,8 @@ class PRF(ABC):
             Three dimensional array representing the PRF values parametrized by flux and centroids.
             Has shape (ntargets, shape[0], shape[1])
         """
-        self.update_coordinates(targets=targets, shape=shape)
+        
+        #self.update_coordinates(targets=targets, shape=shape)
         target_row, target_column = self._unpack_targets(targets)
 
         # Integer extent from the PRF model
@@ -83,7 +85,7 @@ class PRF(ABC):
         c1, c2 = int(np.floor(self.PRFcol[0])), int(np.ceil(self.PRFcol[-1]))
         # Position in the PRF model for each source position % 1
         delta_row, delta_col = (
-            np.arange(r1, r2)[:, None] + 0.5 - np.atleast_1d(target_row) % 1,
+            np.arange(r1, r2)[:, None] + 0.5 - np.atleast_1d(target_row) % 1, 
             np.arange(c1, c2)[:, None] + 0.5 - np.atleast_1d(target_column) % 1,
         )
 
@@ -145,7 +147,8 @@ class PRF(ABC):
             Three dimensional array representing the PRF values parametrized by flux and centroids.
             Has shape (ntargets, shape[0], shape[1])
         """
-        self.update_coordinates(targets=targets, shape=shape)
+        self.check_coordinates(targets=targets, shape=shape)
+        self._prepare_supersamp_prf(targets=targets, shape=shape)
         return self._evaluate(targets=targets, shape=shape, origin=origin, dx=0, dy=0)
 
     def gradient(
@@ -172,7 +175,8 @@ class PRF(ABC):
             This tuple contains two 3D arrays representing the gradient of the PRF values parametrized by flux and centroids.
             Returns (gradient in row, gradient in column). Each array has shape (ntargets, shape[0], shape[1])
         """
-        self.update_coordinates(targets=targets, shape=shape)
+        self.check_coordinates(targets=targets, shape=shape)
+        self._prepare_supersamp_prf(targets=targets, shape=shape)
         deriv_col = self._evaluate(
             targets=targets, shape=shape, origin=origin, dx=0, dy=1
         )
@@ -211,8 +215,8 @@ class PRF(ABC):
         )
         PRFdata /= PRFdata.sum(axis=(1, 2))[:, None, None]
 
-        PRFcol = np.arange(0, np.shape(PRFdata[0])[1] + 0)
-        PRFrow = np.arange(0, np.shape(PRFdata[0])[0] + 0)
+        PRFcol = np.arange(0, np.shape(PRFdata[0])[1])
+        PRFrow = np.arange(0, np.shape(PRFdata[0])[0])
 
         # Shifts pixels so it is in pixel units centered on 0
         PRFcol = (PRFcol - np.size(PRFcol) / 2) * cdelt1p[0]
@@ -234,10 +238,18 @@ class PRF(ABC):
 
 
     @abstractmethod
-    def update_coordinates(self, targets, shape):
-        """Method to update the interpolation function
+    def check_coordinates(self, targets, shape):
+        """Method to check if selected pxels contain collatoral pixels
 
         Wrap this parent method, use the public method to check that e.g. targets are in bounds.
-        This method should provide the interpolation function
+        Provide a warning if pixels are out of bounds
+        """
+        pass
+
+    @abstractmethod
+    def _prepare_supersamp_prf(self, targets, shape):
+        """Method to update the interpolation function
+
+        This method sets up the RectBivariateSpline function to interpolate the supersampled PRF
         """
         pass

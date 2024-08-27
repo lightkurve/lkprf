@@ -5,6 +5,7 @@ import numpy as np
 from .utils import channel_to_module_output, LKPRFWarning
 from .data import get_kepler_prf_file
 import warnings
+from scipy.interpolate import RectBivariateSpline
 
 from .prfmodel import PRF
 
@@ -33,7 +34,7 @@ class KeplerPRF(PRF):
         module, output = channel_to_module_output(self.channel)
         return get_kepler_prf_file(module=module, output=output)
 
-    def update_coordinates(self, targets: List[Tuple], shape: Tuple):
+    def check_coordinates(self, targets: List[Tuple], shape: Tuple):
         row, column = self._unpack_targets(targets)
         """Check that coordinates are within bounds, raise warnings otherwise."""
         if (np.atleast_1d(column) < 12).any():
@@ -57,12 +58,13 @@ class KeplerPRF(PRF):
                 "`targets` contains collateral pixels: Row(s) > 1044)",
                 LKPRFWarning,
             )
-        self._update_coordinates(targets=targets, shape=shape)
         return
     
-    def _update_coordinates(self, targets: List[Tuple], shape: Tuple):
+    def _prepare_supersamp_prf(self, targets: List[Tuple], shape: Tuple):
         row, column = self._unpack_targets(targets)
         # Set the row and column for the model
+
+        # Create one supersampled PRF for each image, used for all targets in the image
         row, column = np.atleast_1d(row), np.atleast_1d(column)
         row = np.min([np.max([row, row**0 * 20], axis=0), row**0 * 1044], axis=0).mean()
         column = np.min(
@@ -92,5 +94,7 @@ class KeplerPRF(PRF):
 
 
         supersamp_prf /= np.nansum(supersamp_prf) * self.cdelt1p[0] * self.cdelt2p[0]
+
+        # Set up the interpolation function
         self.interpolate = RectBivariateSpline(self.PRFrow, self.PRFcol, supersamp_prf)
         return
