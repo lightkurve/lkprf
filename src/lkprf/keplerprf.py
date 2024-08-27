@@ -7,6 +7,7 @@ from .data import get_kepler_prf_file
 import warnings
 
 from .prfmodel import PRF
+from scipy.interpolate import RectBivariateSpline
 
 
 class KeplerPRF(PRF):
