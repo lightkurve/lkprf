@@ -35,7 +35,7 @@ or
 
 ```python
 import lkprf
-prf = lkprf.TESSPRF(camera=1, ccd=1)
+prf = lkprf.TESSPRF(camera=1, ccd=1) # Optionally can specify a sector 
 ```
 
 You can then use either the `evaluate` or `gradient` functions to get the estimate of the PRF at a location, as shown below.
@@ -44,7 +44,7 @@ You can then use either the `evaluate` or `gradient` functions to get the estima
 prf.evaluate(targets=[(5, 5)], origin=(0, 0), shape=(11, 11))
 ```
 
-This will return an array with shape  `(1, 11, 11)`, which contains an `(11, 11)` image containing one target at location `(row=5, column=5)`. The image origin is at `(row=0, column=0)`.
+This will return an array with shape  `(1, 11, 11)`, which contains an `(11, 11)` image containing one target at location `(row=5, column=5)`. The image origin is at `(row=0, column=0)`. Note that for Kepler and TESS, an origin of (0,0) contains [collateral](https://heasarc.gsfc.nasa.gov/docs/tess/data-products.html) (non-science) pixels. 
 
 ```python
 prf.evaluate(targets=[(5, 5), (9, 9)], origin=(0, 0), shape=(11, 11))
