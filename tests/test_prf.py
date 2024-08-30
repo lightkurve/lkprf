@@ -70,4 +70,4 @@ def test_prf_version():
     
     assert prf_sec1_3.date == '30-Jan-2019'
     assert prf_sec4_plus.date == '01-May-2019'
-    assert prf_sec4_notspecified == '01-May-2019'
+    assert prf_sec4_notspecified.date == '01-May-2019'
