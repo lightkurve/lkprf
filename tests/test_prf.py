@@ -60,12 +60,14 @@ def test_prfs():
 
 
 def test_prf_version():
+    # TESS has a different set of measurements for early (1-3) sectors.
+    # Check to make sure it is reading out different files. 
+
     prf_sec1_3 = lkprf.TESSPRF(camera=1, ccd=1, sector= 1)
     prf_sec4_plus = lkprf.TESSPRF(camera=1, ccd=1, sector= 14)
     # If not specified, should default to sector 4+ measurements
-    prf_sec4_plus2 = lkprf.TESSPRF(camera=1, ccd=1)
-
-    assert prf_sec1_3[1].read_header()['DATE'] == '30-Jan-2019'
-    assert prf_sec4_plus[1].read_header()['DATE'] == '01-May-2019'
-    assert prf_sec4_plus2[1].read_header()['DATE'] == '01-May-2019'
+    prf_sec4_notspecified = lkprf.TESSPRF(camera=1, ccd=1)
     
+    assert prf_sec1_3.date == '30-Jan-2019'
+    assert prf_sec4_plus.date == '01-May-2019'
+    assert prf_sec4_notspecified == '01-May-2019'

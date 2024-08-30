@@ -170,6 +170,7 @@ def get_kepler_prf_file(module: int, output: int):
         )
         download_kepler_prf_file(module=module, output=output)
     file_path = f"{PACKAGEDIR}/data/{filename}"
+    
     hdulist = fitsio.FITS(file_path)
     return hdulist
 
@@ -186,6 +187,7 @@ def get_tess_prf_file(camera: int, ccd: int, sector: int = 4):
             f"No local files found, building TESS PRF for Camera {camera}, CCD {ccd}."
         )
         build_tess_prf_file(camera=camera, ccd=ccd, sector=sector)
+
     hdulist = fitsio.FITS(file_path)
     return hdulist
 
