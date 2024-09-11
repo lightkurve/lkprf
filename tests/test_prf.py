@@ -18,7 +18,7 @@ def test_prfs():
         origin = (0, 0)
         shape = (21, 21)
         ar = prf.evaluate(targets=targets, origin=origin, shape=shape)
-        R, C = np.mgrid[: ar.shape[1], : ar.shape[2]] + 1.0
+        R, C = np.mgrid[: ar.shape[1], : ar.shape[2]] 
         assert np.isclose(np.average(R.ravel(), weights=ar[0].ravel()), targets[0][1], atol=0.15)
         assert np.isclose(np.average(C.ravel(), weights=ar[0].ravel()), targets[0][0], atol=0.15)
         assert np.isclose(ar[0].sum(), 1)
@@ -26,8 +26,8 @@ def test_prfs():
         if not is_github_actions():
             fig, ax = plt.subplots(figsize=(6, 5))
             im = ax.pcolormesh(
-                np.arange(origin[1], origin[1] + shape[1]) + 0.5,
-                np.arange(origin[0], origin[0] + shape[0]) + 0.5,
+                np.arange(origin[1], origin[1] + shape[1]) ,
+                np.arange(origin[0], origin[0] + shape[0]) ,
                 ar.sum(axis=0),
                 cmap="Greys_r",
                 vmin=0,
@@ -36,8 +36,8 @@ def test_prfs():
             cbar = plt.colorbar(im, ax=ax)
             # ax.scatter(np.asarray(targets)[:, 1], np.asarray(targets)[:, 0], c="r")
             ax.set(
-                xlim=(origin[1], origin[1] + shape[1] - 1),
-                ylim=(origin[0], origin[0] + shape[0] - 1),
+                xlim=(origin[1] - 0.5, origin[1] + shape[1] - 0.5),
+                ylim=(origin[0] - 0.5, origin[0] + shape[0] - 0.5),
                 title=f"{prf.mission} PRF Example",
                 aspect="equal",
                 xlabel="Column [pixel]",
