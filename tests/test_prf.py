@@ -14,11 +14,11 @@ def is_github_actions():
 def test_prfs():
     """Test you can make a prf and it's fairly well centered"""
     for prf in [lkprf.KeplerPRF(channel=42), lkprf.TESSPRF(camera=1, ccd=1)]:
-        targets = [(10, 10)]
+        targets = [(10.5, 10.5)]
         origin = (0, 0)
         shape = (21, 21)
         ar = prf.evaluate(targets=targets, origin=origin, shape=shape)
-        R, C = np.mgrid[: ar.shape[1], : ar.shape[2]] + 0.5
+        R, C = np.mgrid[: ar.shape[1], : ar.shape[2]] + 1.0
         assert np.isclose(np.average(R.ravel(), weights=ar[0].ravel()), 10.5, atol=0.05)
         assert np.isclose(np.average(C.ravel(), weights=ar[0].ravel()), 10.5, atol=0.05)
         assert np.isclose(ar[0].sum(), 1)
@@ -51,7 +51,7 @@ def test_prfs():
         assert not np.isclose(ar[0].sum(), 1)
         assert not np.isclose(ar[0].sum(), 0)
 
-        ar = prf.gradient(targets=(10, 10), origin=(0, 0), shape=(21, 21))
+        ar = prf.gradient(targets=targets, origin=origin, shape=shape)
         assert isinstance(ar, tuple)
         assert ar[0].shape == (1, *shape)
         for a in ar:
