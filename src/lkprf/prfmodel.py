@@ -85,8 +85,8 @@ class PRF(ABC):
         c1, c2 = int(np.floor(self.PRFcol[0])), int(np.ceil(self.PRFcol[-1]))
         # Position in the PRF model for each source position % 1
         delta_row, delta_col = (
-            np.arange(r1, r2)[:, None] + 0.5 - np.atleast_1d(target_row) % 1, 
-            np.arange(c1, c2)[:, None] + 0.5 - np.atleast_1d(target_column) % 1,
+            np.arange(r1, r2)[:, None] - np.atleast_1d(target_row) % 1, 
+            np.arange(c1, c2)[:, None] - np.atleast_1d(target_column) % 1,
         )
 
         # prf model for each source, downsampled to pixel grid
@@ -215,15 +215,13 @@ class PRF(ABC):
         )
         PRFdata /= PRFdata.sum(axis=(1, 2))[:, None, None]
 
-        PRFcol = np.arange(0, np.shape(PRFdata[0])[1])
-        PRFrow = np.arange(0, np.shape(PRFdata[0])[0])
+        PRFcol = np.arange(0.5, np.shape(PRFdata[0])[1] + 0.5)
+        PRFrow = np.arange(0.5, np.shape(PRFdata[0])[0] + 0.5)
 
         # Shifts pixels so it is in pixel units centered on 0
         PRFcol = (PRFcol - np.size(PRFcol) / 2) * cdelt1p[0]
         PRFrow = (PRFrow - np.size(PRFrow) / 2) * cdelt2p[0]
 
-        PRFcol += 0.5
-        PRFrow += 0.5
 
         (
             self.PRFrow,
