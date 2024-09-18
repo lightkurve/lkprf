@@ -2,6 +2,7 @@
 =====================
 
 - Added the option to use the initial TESS commissioning PRF files [#9]
+- Modified tessprf.py and keplerprf.py to use only the closest PRF measurements to create the supersampled PRF [#8]
 
 1.0.3 (2024-07-30)
 ==================
