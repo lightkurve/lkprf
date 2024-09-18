@@ -38,11 +38,8 @@ class TESSPRF(PRF):
                 LKPRFWarning,
             )
 
-<<<<<<< HEAD
         if ((np.atleast_1d(column) + shape[1]) >= 2093).any():
-=======
-        if ((np.atleast_1d(column) + shape[1]) > 2092).any():
->>>>>>> ae1e3117fe90caad5a9e5d6b1c5ae0f47fca7689
+
             warnings.warn(
                 "`targets` contains collateral pixels: Column(s) >= 2093 ",
                 LKPRFWarning,
