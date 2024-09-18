@@ -192,6 +192,7 @@ class PRF(ABC):
         """
 
         hdulist = self._get_prf_data()
+        self.date = hdulist[0].read_header()['DATE']
         PRFdata, crval1p, crval2p, cdelt1p, cdelt2p = [], [], [], [], []
         for hdu in hdulist[1:]:
             PRFdata.append(hdu.read())
