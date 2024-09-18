@@ -4,7 +4,6 @@ from abc import ABC, abstractmethod
 from typing import Tuple, List
 import numpy.typing as npt
 import numpy as np
-from scipy.interpolate import RectBivariateSpline
 
 
 class PRF(ABC):
@@ -83,8 +82,8 @@ class PRF(ABC):
         c1, c2 = int(np.floor(self.PRFcol[0])), int(np.ceil(self.PRFcol[-1]))
         # Position in the PRF model for each source position % 1
         delta_row, delta_col = (
-            np.arange(r1, r2)[:, None] + 0.5 - np.atleast_1d(target_row) % 1,
-            np.arange(c1, c2)[:, None] + 0.5 - np.atleast_1d(target_column) % 1,
+            np.arange(r1, r2)[:, None]  - np.atleast_1d(target_row) % 1,
+            np.arange(c1, c2)[:, None] - np.atleast_1d(target_column) % 1,
         )
 
         # prf model for each source, downsampled to pixel grid
@@ -212,15 +211,13 @@ class PRF(ABC):
         )
         PRFdata /= PRFdata.sum(axis=(1, 2))[:, None, None]
 
-        PRFcol = np.arange(0, np.shape(PRFdata[0])[1] + 0)
-        PRFrow = np.arange(0, np.shape(PRFdata[0])[0] + 0)
+        PRFcol = np.arange(0.5, np.shape(PRFdata[0])[1] + 0.5)
+        PRFrow = np.arange(0.5, np.shape(PRFdata[0])[0] + 0.5)
 
         # Shifts pixels so it is in pixel units centered on 0
         PRFcol = (PRFcol - np.size(PRFcol) / 2) * cdelt1p[0]
         PRFrow = (PRFrow - np.size(PRFrow) / 2) * cdelt2p[0]
 
-        PRFcol += 0.5
-        PRFrow += 0.5
 
         (
             self.PRFrow,
@@ -232,39 +229,7 @@ class PRF(ABC):
             self.cdelt2p,
         ) = (PRFrow, PRFcol, PRFdata, crval1p, crval2p, cdelt1p, cdelt2p)
 
-    def _update_coordinates(self, targets: List[Tuple], shape: Tuple):
-        row, column = self._unpack_targets(targets)
-        # Set the row and column for the model
-        row, column = np.atleast_1d(row), np.atleast_1d(column)
-        row = np.min([np.max([row, row**0 * 20], axis=0), row**0 * 1044], axis=0).mean()
-        column = np.min(
-            [np.max([column, column**0 * 12], axis=0), column**0 * 1112], axis=0
-        ).mean()
 
-        # interpolate the calibrated PRF shape to the target position
-        min_prf_weight = 1e-6
-        rowdim, coldim = shape[0], shape[1]
-        ref_column = column + 0.5 * coldim
-        ref_row = row + 0.5 * rowdim
-        supersamp_prf = np.zeros(self.PRFdata.shape[1:], dtype="float32")
-
-        # Find the 4 measurements nearest the desired locations
-        prf_weights = [
-            np.sqrt(
-                (ref_column - self.crval1p[i]) ** 2 + (ref_row - self.crval2p[i]) ** 2) 
-                for i in range(self.PRFdata.shape[0])
-                ]
-        idx = np.argpartition(prf_weights, 4)[:4]
-
-        for i in idx:
-            if prf_weights[i] < min_prf_weight:
-                prf_weights[i] = min_prf_weight
-            supersamp_prf += self.PRFdata[i] / prf_weights[i]
-
-
-        supersamp_prf /= np.nansum(supersamp_prf) * self.cdelt1p[0] * self.cdelt2p[0]
-        self.interpolate = RectBivariateSpline(self.PRFrow, self.PRFcol, supersamp_prf)
-        return
 
     @abstractmethod
     def update_coordinates(self, targets, shape):
