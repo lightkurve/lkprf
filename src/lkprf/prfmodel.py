@@ -85,7 +85,7 @@ class PRF(ABC):
         c1, c2 = int(np.floor(self.PRFcol[0])), int(np.ceil(self.PRFcol[-1]))
         # Position in the PRF model for each source position % 1
         delta_row, delta_col = (
-            np.arange(r1, r2)[:, None] - np.atleast_1d(target_row) % 1, 
+            np.arange(r1, r2)[:, None] - np.atleast_1d(target_row) % 1,
             np.arange(c1, c2)[:, None] - np.atleast_1d(target_column) % 1,
         )
 
@@ -197,6 +197,7 @@ class PRF(ABC):
         """
 
         hdulist = self._get_prf_data()
+        self.date = hdulist[0].read_header()['DATE']
         PRFdata, crval1p, crval2p, cdelt1p, cdelt2p = [], [], [], [], []
         for hdu in hdulist[1:]:
             PRFdata.append(hdu.read())

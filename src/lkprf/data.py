@@ -17,6 +17,33 @@ __all__ = [
     "clear_tess_cache",
 ]
 
+_tess_prefixes_S1_3 = {
+    1: {
+        1: "2018243163600",
+        2: "2018243163600",
+        3: "2018243163600",
+        4: "2018243163600",
+    },
+    2: {
+        1: "2018243163600",
+        2: "2018243163600",
+        3: "2018243163600",
+        4: "2018243163601",
+    },
+    3: {
+        1: "2018243163601",
+        2: "2018243163601",
+        3: "2018243163601",
+        4: "2018243163601",
+    },
+    4: {
+        1: "2018243163601",
+        2: "2018243163601",
+        3: "2018243163601",
+        4: "2018243163601",
+    },
+}
+
 
 _tess_prefixes = {
     1: {
@@ -77,7 +104,7 @@ def download_kepler_prf_file(module: int, output: int):
     return
 
 
-def build_tess_prf_file(camera: int, ccd: int):
+def build_tess_prf_file(camera: int, ccd: int, sector: int):
     """Download a set of TESS PRF files for a given camera/ccd"""
 
     def open_file(url: str):
@@ -98,11 +125,19 @@ def build_tess_prf_file(camera: int, ccd: int):
         data[mask] = 0
         return data, hdr
 
-    tess_archive_url = (
-        "https://archive.stsci.edu/missions/tess/models/prf_fitsfiles/start_s0004/"
-    )
-    prefix = _tess_prefixes[camera][ccd]
-    filename = f"tess-prf-{camera}-{ccd}.fits"
+    if sector <= 3:
+        tess_archive_url = (
+            "https://archive.stsci.edu/missions/tess/models/prf_fitsfiles/start_s0001/"
+        )
+        prefix = _tess_prefixes_S1_3[camera][ccd]
+        filename = f"tess-prf-cam{camera}-ccd{ccd}-sec1.fits"
+    else:
+        tess_archive_url = (
+            "https://archive.stsci.edu/missions/tess/models/prf_fitsfiles/start_s0004/"
+        )
+        prefix = _tess_prefixes[camera][ccd]
+        filename = f"tess-prf-cam{camera}-ccd{ccd}-sec4.fits"
+    
     file_path = f"{PACKAGEDIR}/data/{filename}"
     # ensure the file_path exists
     if not os.path.exists(file_path):
@@ -135,19 +170,24 @@ def get_kepler_prf_file(module: int, output: int):
         )
         download_kepler_prf_file(module=module, output=output)
     file_path = f"{PACKAGEDIR}/data/{filename}"
+    
     hdulist = fitsio.FITS(file_path)
     return hdulist
 
 
-def get_tess_prf_file(camera: int, ccd: int):
-    """Get a PRF file for a given camera/ccd"""
-    filename = f"tess-prf-{camera}-{ccd}.fits"
+def get_tess_prf_file(camera: int, ccd: int, sector: int = 4):
+    """Get a PRF file for a given camera/ccd/sector"""
+    if sector <= 3:
+        filename = f"tess-prf-cam{camera}-ccd{ccd}-sec1.fits"
+    else:
+        filename = f"tess-prf-cam{camera}-ccd{ccd}-sec4.fits"
     file_path = f"{PACKAGEDIR}/data/{filename}"
     if not os.path.isfile(file_path):
         logger.info(
             f"No local files found, building TESS PRF for Camera {camera}, CCD {ccd}."
         )
-        build_tess_prf_file(camera=camera, ccd=ccd)
+        build_tess_prf_file(camera=camera, ccd=ccd, sector=sector)
+
     hdulist = fitsio.FITS(file_path)
     return hdulist
 
