@@ -1,10 +1,10 @@
 # Standard library
 import os  # noqa
 import logging
+from .version import __version__
 
 PACKAGEDIR = os.path.abspath(os.path.dirname(__file__))
 
-__version__ = "1.0.3"
 logger = logging.getLogger("lkprf")
 
 from .data import *  # noqa
