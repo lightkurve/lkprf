@@ -6,7 +6,7 @@ import numpy as np
 import fitsio
 from scipy.ndimage import label, uniform_filter
 
-from . import logger, PACKAGEDIR
+from . import logger, PACKAGEDIR, CACHEDIR
 
 __all__ = [
     "download_kepler_prf_file",
@@ -91,10 +91,10 @@ def _download_file(url, file_path):
                 raise http_err
 
 
-def download_kepler_prf_file(module: int, output: int):
+def download_kepler_prf_file(module: int, output: int, cache_dir: str = CACHEDIR):
     """Download a Kepler Module file"""
     filename = f"kplr{module:02}.{output}_2011265_prf.fits"
-    file_path = f"{PACKAGEDIR}/data/{filename}"
+    file_path = f"{cache_dir}{filename}"
     url = f"https://archive.stsci.edu/missions/kepler/fpc/prf/{filename}"
     logger.info(f"Downloading {module:02}.{output}")
     _download_file(url, file_path)
@@ -104,7 +104,7 @@ def download_kepler_prf_file(module: int, output: int):
     return
 
 
-def build_tess_prf_file(camera: int, ccd: int, sector: int):
+def build_tess_prf_file(camera: int, ccd: int, sector: int, cache_dir: str = CACHEDIR):
     """Download a set of TESS PRF files for a given camera/ccd"""
 
     def open_file(url: str):
@@ -138,7 +138,7 @@ def build_tess_prf_file(camera: int, ccd: int, sector: int):
         prefix = _tess_prefixes[camera][ccd]
         filename = f"tess-prf-cam{camera}-ccd{ccd}-sec4.fits"
     
-    file_path = f"{PACKAGEDIR}/data/{filename}"
+    file_path = f"{cache_dir}{filename}"
     # ensure the file_path exists
     if not os.path.exists(file_path):
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
@@ -160,51 +160,50 @@ def build_tess_prf_file(camera: int, ccd: int, sector: int):
     return
 
 
-def get_kepler_prf_file(module: int, output: int):
+def get_kepler_prf_file(module: int, output: int, cache_dir: str = CACHEDIR):
     """Download a Kepler Module file"""
     filename = f"kplr{module:02}.{output}_2011265_prf.fits"
-    file_path = f"{PACKAGEDIR}/data/{filename}"
+    file_path = f"{cache_dir}{filename}"
     if not os.path.isfile(file_path):
         logger.info(
             f"No local files found, building Kepler PRF for Module {module}, output {output}."
         )
-        download_kepler_prf_file(module=module, output=output)
-    file_path = f"{PACKAGEDIR}/data/{filename}"
+        download_kepler_prf_file(module=module, output=output, cache_dir=cache_dir)
     
     hdulist = fitsio.FITS(file_path)
     return hdulist
 
 
-def get_tess_prf_file(camera: int, ccd: int, sector: int = 4):
+def get_tess_prf_file(camera: int, ccd: int, sector: int = 4, cache_dir: str = CACHEDIR):
     """Get a PRF file for a given camera/ccd/sector"""
     if sector <= 3:
         filename = f"tess-prf-cam{camera}-ccd{ccd}-sec1.fits"
     else:
         filename = f"tess-prf-cam{camera}-ccd{ccd}-sec4.fits"
-    file_path = f"{PACKAGEDIR}/data/{filename}"
+    file_path = f"{cache_dir}{filename}"
     if not os.path.isfile(file_path):
         logger.info(
             f"No local files found, building TESS PRF for Camera {camera}, CCD {ccd}."
         )
-        build_tess_prf_file(camera=camera, ccd=ccd, sector=sector)
-
+        build_tess_prf_file(camera=camera, ccd=ccd, sector=sector, cache_dir=cache_dir)
+    
     hdulist = fitsio.FITS(file_path)
     return hdulist
 
 
-def clear_kepler_cache():
+def clear_kepler_cache(cache_dir: str = CACHEDIR):
     for module in np.arange(26):
         for output in np.arange(1, 5):
             filename = f"kplr{module:02}.{output}_2011265_prf.fits"
-            file_path = f"{PACKAGEDIR}/data/{filename}"
+            file_path = f"{cache_dir}{filename}"
             if os.path.isfile(file_path):
                 os.remove(file_path)
 
 
-def clear_tess_cache():
+def clear_tess_cache(cache_dir: str = CACHEDIR):
     for camera in np.arange(1, 5):
         for ccd in np.arange(1, 5):
             filename = f"tess-prf-{camera}-{ccd}.fits"
-            file_path = f"{PACKAGEDIR}/data/{filename}"
+            file_path = f"{cache_dir}{filename}"
             if os.path.isfile(file_path):
                 os.remove(file_path)
