@@ -4,7 +4,7 @@ from typing import Tuple, List
 import numpy as np
 from .utils import LKPRFWarning
 from .data import get_tess_prf_file
-from . import CACHEDIR
+from . import PACKAGEDIR
 import warnings
 
 from .prfmodel import PRF
@@ -15,7 +15,7 @@ class TESSPRF(PRF):
     """A TESSPRF class. The TESS PRF measurements are supersampled by a factor of 9.
     Two PRF models were produced, one for sectors 1-3 and a second set for sectors 4+ """
 
-    def __init__(self, camera: int, ccd: int, sector: int = 4, cache_dir: str = CACHEDIR):
+    def __init__(self, camera: int, ccd: int, sector: int = 4, cache_dir: str = PACKAGEDIR + '/data/'):
         super().__init__()
         self.camera = camera
         self.ccd = ccd

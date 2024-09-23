@@ -4,7 +4,7 @@ from typing import Tuple, List
 import numpy as np
 from .utils import channel_to_module_output, LKPRFWarning
 from .data import get_kepler_prf_file
-from . import CACHEDIR
+from . import PACKAGEDIR
 import warnings
 
 from .prfmodel import PRF
@@ -22,7 +22,7 @@ class KeplerPRF(PRF):
     https://archive.stsci.edu/missions/kepler/commissioning_prfs/
     """
 
-    def __init__(self, channel: int, cache_dir: str = CACHEDIR):
+    def __init__(self, channel: int, cache_dir: str = PACKAGEDIR + '/data/'):
         super().__init__()
         self.channel = channel
         self.mission = "Kepler"

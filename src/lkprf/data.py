@@ -6,7 +6,8 @@ import numpy as np
 import fitsio
 from scipy.ndimage import label, uniform_filter
 
-from . import logger, PACKAGEDIR, CACHEDIR
+from . import logger, PACKAGEDIR
+CACHEDIR = PACKAGEDIR + '/data/'
 
 __all__ = [
     "download_kepler_prf_file",
