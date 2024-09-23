@@ -82,7 +82,7 @@ Below is an example image for the TES PRF, for Camera 1, CCD 1, with a source at
 
 ![TESS PRF Example](images/TESS.png)
 
-### Where can I learn more?
+## Where can I learn more?
 
 For more examples of how to use lkprf to generate TPF-like PRF models, see this [tutorial](tutorials/lkprf_TPF_example.ipynb). 
 
