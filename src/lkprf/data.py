@@ -7,7 +7,8 @@ import fitsio
 from scipy.ndimage import label, uniform_filter
 
 from . import logger, PACKAGEDIR
-CACHEDIR = PACKAGEDIR + '/data/'
+
+CACHEDIR = PACKAGEDIR + "/data/"
 
 __all__ = [
     "download_kepler_prf_file",
@@ -138,7 +139,7 @@ def build_tess_prf_file(camera: int, ccd: int, sector: int, cache_dir: str = CAC
         )
         prefix = _tess_prefixes[camera][ccd]
         filename = f"tess-prf-cam{camera}-ccd{ccd}-sec4.fits"
-    
+
     file_path = f"{cache_dir}{filename}"
     # ensure the file_path exists
     if not os.path.exists(file_path):
@@ -170,12 +171,14 @@ def get_kepler_prf_file(module: int, output: int, cache_dir: str = CACHEDIR):
             f"No local files found, building Kepler PRF for Module {module}, output {output}."
         )
         download_kepler_prf_file(module=module, output=output, cache_dir=cache_dir)
-    
+
     hdulist = fitsio.FITS(file_path)
     return hdulist
 
 
-def get_tess_prf_file(camera: int, ccd: int, sector: int = 4, cache_dir: str = CACHEDIR):
+def get_tess_prf_file(
+    camera: int, ccd: int, sector: int = 4, cache_dir: str = CACHEDIR
+):
     """Get a PRF file for a given camera/ccd/sector"""
     if sector <= 3:
         filename = f"tess-prf-cam{camera}-ccd{ccd}-sec1.fits"
@@ -187,7 +190,7 @@ def get_tess_prf_file(camera: int, ccd: int, sector: int = 4, cache_dir: str = C
             f"No local files found, building TESS PRF for Camera {camera}, CCD {ccd}."
         )
         build_tess_prf_file(camera=camera, ccd=ccd, sector=sector, cache_dir=cache_dir)
-    
+
     hdulist = fitsio.FITS(file_path)
     return hdulist
 

@@ -67,7 +67,7 @@ class PRF(ABC):
             The (row, column) origin of the image in pixels.
             Combined with shape this sets the extent of the image.
         shape : Tuple
-            The (N_row, N_col) shape of the image. 
+            The (N_row, N_col) shape of the image.
             Combined with the origin this sets the extent of the image.
 
         Returns
@@ -76,8 +76,8 @@ class PRF(ABC):
             Three dimensional array representing the PRF values parametrized by flux and centroids.
             Has shape (ntargets, shape[0], shape[1])
         """
-        
-        #self.update_coordinates(targets=targets, shape=shape)
+
+        # self.update_coordinates(targets=targets, shape=shape)
         target_row, target_column = self._unpack_targets(targets)
 
         # Integer extent from the PRF model
@@ -197,7 +197,7 @@ class PRF(ABC):
         """
 
         hdulist = self._get_prf_data()
-        self.date = hdulist[0].read_header()['DATE']
+        self.date = hdulist[0].read_header()["DATE"]
         PRFdata, crval1p, crval2p, cdelt1p, cdelt2p = [], [], [], [], []
         for hdu in hdulist[1:]:
             PRFdata.append(hdu.read())
@@ -223,7 +223,6 @@ class PRF(ABC):
         PRFcol = (PRFcol - np.size(PRFcol) / 2) * cdelt1p[0]
         PRFrow = (PRFrow - np.size(PRFrow) / 2) * cdelt2p[0]
 
-
         (
             self.PRFrow,
             self.PRFcol,
@@ -233,8 +232,6 @@ class PRF(ABC):
             self.cdelt1p,
             self.cdelt2p,
         ) = (PRFrow, PRFcol, PRFdata, crval1p, crval2p, cdelt1p, cdelt2p)
-
-
 
     @abstractmethod
     def check_coordinates(self, targets, shape):
