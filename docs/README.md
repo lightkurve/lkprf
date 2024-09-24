@@ -20,6 +20,8 @@ You can install lkprf using pip:
 pip install lkprf --upgrade
 ```
 
+> :question: **Note**: If installing in a new environment you may run into issues with the fitsio build that causes an installation error. If so, you can pip install numpy< 2.0.0 first, then pip install lkprf. 
+
 ## Usage
 
 > :question: **Note**: `lkprf` uses tuples to specify positions and uses the Python convention of `(row, column)`.
