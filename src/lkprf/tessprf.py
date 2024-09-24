@@ -28,7 +28,6 @@ class TESSPRF(PRF):
         return f"TESSPRF Object [Camera {self.camera}, CCD {self.ccd}, Sector {self.sector}]"
 
     def _get_prf_data(self):
-        print(self.cache_dir)
         return get_tess_prf_file(camera=self.camera, ccd=self.ccd, sector=self.sector, cache_dir=self.cache_dir)
 
     def update_coordinates(self, targets: List[Tuple], shape: Tuple):
