@@ -4,6 +4,7 @@ from typing import Tuple, List
 import numpy as np
 from .utils import channel_to_module_output, LKPRFWarning
 from .data import get_kepler_prf_file
+from . import PACKAGEDIR
 import warnings
 
 from .prfmodel import PRF
@@ -21,18 +22,20 @@ class KeplerPRF(PRF):
     https://archive.stsci.edu/missions/kepler/commissioning_prfs/
     """
 
-    def __init__(self, channel: int):
+    def __init__(self, channel: int, cache_dir: str = PACKAGEDIR + '/data/'):
         super().__init__()
         self.channel = channel
         self.mission = "Kepler"
+        self.cache_dir = cache_dir
         self._prepare_prf()
+        
 
     def __repr__(self):
         return f"KeplerPRF Object [Channel {self.channel}]"
 
     def _get_prf_data(self):
         module, output = channel_to_module_output(self.channel)
-        return get_kepler_prf_file(module=module, output=output)
+        return get_kepler_prf_file(module=module, output=output, cache_dir = self.cache_dir)
 
     def update_coordinates(self, targets: List[Tuple], shape: Tuple):
         row, column = self._unpack_targets(targets)
