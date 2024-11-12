@@ -23,20 +23,21 @@ class KeplerPRF(PRF):
     https://archive.stsci.edu/missions/kepler/commissioning_prfs/
     """
 
-    def __init__(self, channel: int, cache_dir: str = PACKAGEDIR + '/data/'):
+    def __init__(self, channel: int, cache_dir: str = PACKAGEDIR + "/data/"):
         super().__init__()
         self.channel = channel
         self.mission = "Kepler"
         self.cache_dir = cache_dir
         self._prepare_prf()
-        
 
     def __repr__(self):
         return f"KeplerPRF Object [Channel {self.channel}]"
 
     def _get_prf_data(self):
         module, output = channel_to_module_output(self.channel)
-        return get_kepler_prf_file(module=module, output=output, cache_dir = self.cache_dir)
+        return get_kepler_prf_file(
+            module=module, output=output, cache_dir=self.cache_dir
+        )
 
     def check_coordinates(self, targets: List[Tuple], shape: Tuple):
         row, column = self._unpack_targets(targets)
@@ -63,7 +64,7 @@ class KeplerPRF(PRF):
                 LKPRFWarning,
             )
         return
-    
+
     def _prepare_supersamp_prf(self, targets: List[Tuple], shape: Tuple):
         row, column = self._unpack_targets(targets)
         # Set the row and column for the model
@@ -86,9 +87,10 @@ class KeplerPRF(PRF):
         # Kepler has 5 measurements, so nearest 3 triangulates the measurement
         prf_weights = [
             np.sqrt(
-                (ref_column - self.crval1p[i]) ** 2 + (ref_row - self.crval2p[i]) ** 2) 
-                for i in range(self.PRFdata.shape[0])
-                ]
+                (ref_column - self.crval1p[i]) ** 2 + (ref_row - self.crval2p[i]) ** 2
+            )
+            for i in range(self.PRFdata.shape[0])
+        ]
         idx = np.argpartition(prf_weights, 3)[:3]
 
         for i in idx:
@@ -96,13 +98,12 @@ class KeplerPRF(PRF):
                 prf_weights[i] = min_prf_weight
             supersamp_prf += self.PRFdata[i] / prf_weights[i]
 
-
         supersamp_prf /= np.nansum(supersamp_prf) * self.cdelt1p[0] * self.cdelt2p[0]
 
         # Set up the interpolation function
         self.interpolate = RectBivariateSpline(self.PRFrow, self.PRFcol, supersamp_prf)
         return
-    
+
     def _update_coordinates(self, targets: List[Tuple], shape: Tuple):
         row, column = self._unpack_targets(targets)
         # Set the row and column for the model
@@ -123,16 +124,16 @@ class KeplerPRF(PRF):
         # Kepler has 5 measurements, so nearest 3 triangulates the measurement
         prf_weights = [
             np.sqrt(
-                (ref_column - self.crval1p[i]) ** 2 + (ref_row - self.crval2p[i]) ** 2) 
-                for i in range(self.PRFdata.shape[0])
-                ]
+                (ref_column - self.crval1p[i]) ** 2 + (ref_row - self.crval2p[i]) ** 2
+            )
+            for i in range(self.PRFdata.shape[0])
+        ]
         idx = np.argpartition(prf_weights, 3)[:3]
 
         for i in idx:
             if prf_weights[i] < min_prf_weight:
                 prf_weights[i] = min_prf_weight
             supersamp_prf += self.PRFdata[i] / prf_weights[i]
-
 
         supersamp_prf /= np.nansum(supersamp_prf) * self.cdelt1p[0] * self.cdelt2p[0]
         self.interpolate = RectBivariateSpline(self.PRFrow, self.PRFcol, supersamp_prf)

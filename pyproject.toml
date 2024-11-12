@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "lkprf"
-version = "1.1.0dev"
+version = "1.1.1"
 description = ""
 authors = ["TESS Science Support Center <tesshelp@bigbang.gsfc.nasa.gov>, Christina Hedges <christina.l.hedges@nasa.gov>"]
 license = "MIT"
@@ -10,6 +10,7 @@ packages = [{include = "lkprf", from = "src"}]
 [tool.poetry.dependencies]
 python = ">=3.8.1,<4.0"
 scipy = ">=1.8.0"
+numpy = ">=1.20.0,<2.0.0"
 fitsio = "^1.2.4"
 requests = "^2.32.3"
 
