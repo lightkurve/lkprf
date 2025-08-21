@@ -10,3 +10,4 @@ logger = logging.getLogger("lkprf")
 from .data import *  # noqa
 from .keplerprf import KeplerPRF  # noqa
 from .tessprf import TESSPRF  # noqa
+from .aperture import aperture
