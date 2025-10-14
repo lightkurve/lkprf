@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from typing import Tuple, List
 import numpy.typing as npt
 import numpy as np
+from .aperture import aperture
 
 
 class PRF(ABC):
@@ -149,8 +150,81 @@ class PRF(ABC):
         """
         self.check_coordinates(targets=targets, shape=shape)
         self._prepare_supersamp_prf(targets=targets, shape=shape)
-        return self._evaluate(targets=targets, shape=shape, origin=origin, dx=0, dy=0)
+        #Need to define model_prf as a proprety of self here so it can be used in get_aperture
+        self.model_prf = self._evaluate(targets=targets, shape=shape, origin=origin, dx=0, dy=0)
+        return self.model_prf
 
+    def get_aperture(self,
+                     aperture_type: str = "strict",
+                     completeness: float = 0.9,
+                     crowding_metric: float = 0.8,
+                     fluxfrac_metric: float = 0.9,
+                     target_index: int = 0,
+                     tess_mag = list[float]) -> float:
+
+        """Calculates an aperture for the user based on the PSF. The user may pick from three options depending on the
+        object of interest and the level of crowding.
+
+        Parameters
+        ----------
+
+        aperture_type : A string in which the user can specify the kind of aperture they want calculated. 
+
+        strict --> Based on the cumulative S/N of the target vs other objects in the data cube.
+        Computes the local minima of the cumulative S/N and returns the pixel index for which this occurs.
+        This is then used to create the aperture. 
+        simple --> Computed using the target prf model only. Calculates the cumulative relative flux and uses a completness
+                   parameter input by the user to determine the aperture.
+        crowded --> This is computes the aperture based on user input crodsap and flfrcsap values.
+
+        completeness : Float
+            The relative fraction of flux within a given aperture divided by the total flux of the object. This value is used to
+            compute the simple aperture.
+        crowding_metric: Float
+            The crowding metric reflects what fraction of the flux in the aperture is due to the target itself not the nearby
+            light sources. Should be flux of source/total flux of everything in the prf data cube.
+        fluxfrac_metric: Float
+            The flux fraction is similar to excess flux leaking into the aperture, a fraction of the prf of the target may not
+            be captured in it. To account for this missing fraction, the flux fraction is computed.
+        target_index: int
+            The index of the target within the prf data cube.
+        tess_mag: List[float])
+            The Tess magnitudes of all objects within the prf data cube. Magnitudes must be listed in the order present within the
+            data cube.
+
+        Returns
+        -------
+        A boolean array which can be used as an aperture within lightkurve.
+        
+        """
+
+        self.aperture_model = aperture(model_prf=self.model_prf, tess_mag=tess_mag, target_index=target_index)
+
+        #Want to restrict input of apertures to those allowed
+        allowed_apertures = ["strict", "simple", "crowded"]
+
+        if aperture_type in allowed_apertures:
+            
+            if aperture_type == "strict":
+
+                ap = self.aperture_model.strict_aperture()
+
+            elif (aperture_type == "simple") and (completeness is not None) and (tess_mag is not None):
+
+                ap = self.aperture_model.simple_aperture(completeness)
+                
+            elif (aperture_type == "crowded") and (crowding_metric is not None) and (fluxfrac_metric is not None) and (tess_mag is not None):
+
+                ap = self.aperture_model.crowded_aperture(crowding_metric, fluxfrac_metric)
+
+            else:
+                print("You must specify which aperture type to generate and input relvant parameters")
+
+        else:
+            print("User did not enter valid aperture type. Types allowed are 'strict', 'simple', and 'crowded'")
+            
+        return ap 
+            
     def gradient(
         self,
         targets: List[Tuple] = [(5.5, 5.5)],
