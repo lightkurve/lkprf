@@ -8,21 +8,16 @@ from .data import get_tess_prf_file
 from . import PACKAGEDIR
 import warnings
 
-from .prfmodel import PRF
-
 from scipy.interpolate import RectBivariateSpline
 from scipy.signal import argrelextrema
 
-
-##Has an LKPRF model and is an aperture
 class aperture:
 
     def __init__(
         self,
-        model_prf = [],  # must be an 3D array
-        tess_mag = [],  # must match length of self[0:] and must be an array
-        target_index = 0,  # the index that the target is stored in - will need to put something in to say if not there error
-    ):
+        model_prf = [],  #Must be an 3D array
+        target_index: int = 0,  # The index that the target prf is stored in
+        tess_mag = list[float]) -> float:  # Must match length of self[0:] and must be an array  
 
         self.model_prf = model_prf
         self.tess_mag = tess_mag
@@ -111,7 +106,7 @@ class aperture:
         The flux fraction is similar to excess flux leaking into the aperture, a fraction of the PRF of the
         target may not be captured in it.
         To account for this missing fraction, the flux fraction is computed."""
-        
+
         # Need to convert into flux first
         model_prf_flux = self._compute_prf_flux()
 
