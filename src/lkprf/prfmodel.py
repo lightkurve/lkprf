@@ -175,7 +175,7 @@ class PRF(ABC):
         This is then used to create the aperture. 
         simple --> Computed using the target prf model only. Calculates the cumulative relative flux and uses a completness
                    parameter input by the user to determine the aperture.
-        crowded --> This is computes the aperture based on user input crodsap and flfrcsap values.
+        balanced --> This is computes the aperture based on user input crowdsap and flfrcsap values.
 
         completeness : Float
             The relative fraction of flux within a given aperture divided by the total flux of the object. This value is used to
@@ -201,30 +201,30 @@ class PRF(ABC):
         self.aperture_model = aperture(model_prf=self.model_prf, tess_mag=tess_mag, target_index=target_index)
 
         #Want to restrict input of apertures to those allowed
-        allowed_apertures = ["strict", "simple", "crowded"]
+        allowed_apertures = ["strict", "simple", "balanced"]
 
         if aperture_type in allowed_apertures:
             
-            if aperture_type == "strict":
+            if (aperture_type == "strict") and (tess_mag is not None):
 
-                ap = self.aperture_model.strict_aperture()
+                ap, Di = self.aperture_model.strict_aperture()
 
             elif (aperture_type == "simple") and (completeness is not None) and (tess_mag is not None):
 
-                ap = self.aperture_model.simple_aperture(completeness)
+                ap, Di = self.aperture_model.simple_aperture(completeness)
                 
-            elif (aperture_type == "crowded") and (crowding_metric is not None) and (fluxfrac_metric is not None) and (tess_mag is not None):
+            elif (aperture_type == "balanced") and (crowding_metric is not None) and (fluxfrac_metric is not None) and (tess_mag is not None):
 
-                ap = self.aperture_model.crowded_aperture(crowding_metric, fluxfrac_metric)
+                ap, Di = self.aperture_model.balanced_aperture(crowding_metric, fluxfrac_metric)
 
             else:
                 print("You must specify which aperture type to generate and input relvant parameters")
 
         else:
-            print("User did not enter valid aperture type. Types allowed are 'strict', 'simple', and 'crowded'")
+            print("User did not enter valid aperture type. Types allowed are 'strict', 'simple', and 'balanced'")
             
-        return ap 
-            
+        return ap, Di  
+
     def gradient(
         self,
         targets: List[Tuple] = [(5.5, 5.5)],

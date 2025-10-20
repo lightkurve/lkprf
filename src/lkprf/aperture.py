@@ -148,6 +148,24 @@ class aperture:
 
         return minima_indices_fix[0]
 
+
+    def _calculate_dilution_factor(self,aperture):
+        #Calculates the dilution factor as a function of the aperture selected
+
+        # Convert into flux model
+        model_prf_flux = self._compute_prf_flux()
+
+        # Get sum of target flux in aperture
+        target_flux = model_prf_flux[self.target_index]
+        sum_target_flux = np.sum(model_prf_flux[self.target_index] * aperture)
+
+        # Get sum of all flux in aperture
+        all_flux = np.sum(model_prf_flux * aperture)
+
+        Di = sum_target_flux/all_flux
+
+        return Di
+    
     def simple_aperture(self, completeness: float = 0.9):
 
         # Calclate the flux fraction
@@ -172,7 +190,11 @@ class aperture:
         # Re-shape the array into what it was before so we can see what the mask looks like
         simple_aperture = all_false_array.reshape(target_data.shape)
 
-        return simple_aperture
+        #Calculate Dilution factor
+        Di = self._calculate_dilution_factor(simple_aperture)
+        
+        
+        return simple_aperture, Di
 
     def strict_aperture(self):
 
@@ -200,9 +222,13 @@ class aperture:
         # Re-shape the array into what it was before so we can see what the mask looks like
         strict_aperture = all_false_array.reshape(target_data.shape)
 
-        return strict_aperture
+        #Calculate Dilution factor
+        Di = self._calculate_dilution_factor(strict_aperture)
 
-    def crowded_aperture(
+        return strict_aperture, Di
+    
+
+    def balanced_aperture(
         self, crowding_metric: float = 0.8, fluxfrac_metric: float = 0.9
     ):
 
@@ -228,6 +254,9 @@ class aperture:
             all_false_array[index] = True
 
         # Re-shape the array into what it was before so we can see what the mask looks like
-        crowding_aperture = all_false_array.reshape(shape)
+        balanced_aperture = all_false_array.reshape(shape)
 
-        return crowding_aperture
+        #Calculate Dilution factor
+        Di = self._calculate_dilution_factor(balanced_aperture)
+        
+        return balanced_aperture, Di
