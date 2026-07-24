@@ -1,245 +1,191 @@
 """Class to create apertures for PRF models"""
 
-from typing import Tuple, List
+from typing import List, Union, Tuple, Optional
 import numpy as np
+from . import logger
 
-from .utils import LKPRFWarning
-from .data import get_tess_prf_file
-from . import PACKAGEDIR
-import warnings
+ZP_MISSION = {"kepler": 25.132, "k2": 25.132, "tess": 20.44}
 
-from scipy.interpolate import RectBivariateSpline
-from scipy.signal import argrelextrema
-
-class aperture:
-
+class Aperture:
     def __init__(
         self,
-        model_prf = [],  #Must be an 3D array
-        target_index: int = 0,  # The index that the target prf is stored in
-        tess_mag = list[float]) -> float:  # Must match length of self[0:] and must be an array  
+        model_prf: np.ndarray,
+        source_mag: Optional[Union[List[float], np.ndarray]] = None,
+        target_index: int = 0,
+        mission: str = "TESS",
+    ): 
 
-        self.model_prf = model_prf
-        self.tess_mag = tess_mag
+        # we check if target list is within number of sources
+        if target_index > len(model_prf):
+            raise ValueError("Provided target index is out of size for `mode_prf`")
+
+        self.model_prf = model_prf.reshape(len(model_prf), -1)
+        self.source_mag = source_mag
         self.target_index = target_index
+        self.mission = mission
 
-    def _compute_prf_flux(self):
-        """Converts the prf model(s) into flux using input tess magnitudes
-        """
+        self.image_shape = self.model_prf.shape[1:]
 
-        zpt = 20.44
+        # compute the scene model (cube) in flux units
+        self.scene_flux_cube = self._compute_prf_flux()
+        # compute the target flux and scene flux
+        self.target_flux = self.scene_flux_cube[self.target_index].ravel()
+        self.scene_flux = self.scene_flux_cube.sum(axis=0).ravel()
+        # keep sort index for target flux
+        self.sort_index = np.argsort(self.target_flux)[::-1]
 
-        # Creates empty areay to store flux model values
-        model_prf_flux = []
-        for a in range(len(self.tess_mag)):
-            tess_flux = 10 ** ((zpt - self.tess_mag[a]) / 2.5)
-            model_prf_flux.append(self.model_prf[a] * tess_flux)
+    def _compute_prf_flux(self) -> np.ndarray:
+        """Converts the prf model(s) into flux using input tess magnitudes"""
+
+        if self.source_mag is None:
+            logger.warning(
+                "Source magnitude not provided, for accurate aperture construction "
+                "and metric estimation please provide these values. "
+                "Using constant magnitude 10.0 for all sources as default.")
+            self.source_mag = np.ones(len(self.model_prf), dtype=float) * 10
+        # we check if the number of rows in model_prf is the same as provided sources
+        if len(self.model_prf) != len(self.source_mag):
+            raise ValueError(
+                "Number of sources does not match between `model_prf` and `source_mag`"
+            )
+        if isinstance(self.source_mag, list):
+            self.source_mag = np.array(self.source_mag).ravel()
+
+        zpt = ZP_MISSION.get(self.mission.lower(), 20.0)
+
+        # convert Tmag to flux values and dot with PRF model
+        tess_flux = 10 ** ((zpt - self.source_mag) / 2.5)
+        model_prf_flux = self.model_prf * tess_flux[:, None]
 
         return np.array(model_prf_flux)
 
-    def _compute_cumulative_FLFRCSAP(self):
-        """This will calculate the FLFRCSAP for an aperture that starts from the brightest pixel in the target PRF and then includes the second brightest
-        and so on in decreasing value. The flux fraction is similar to excess flux leaking into the aperture, a fraction of the PRF of the target may not
-        be captured in it. To account for this missing fraction, the flux fraction is computed."""
-
-        # Grab only the target from the prf cube and flatten the data
-        target_flatten = self.model_prf[self.target_index].flatten()
-
-        # Next sort by brightest to faintest
-        sort_index = np.argsort(target_flatten)
-
-        # Now decending values
-        descending_indices = sort_index[::-1]
+    def _compute_cumulative_FLFRCSAP(self) -> np.ndarray:
+        """This will calculate the FLFRCSAP for an aperture that starts from the brightest
+        pixel in the target PRF and then includes the second brightest
+        and so on in decreasing value. The flux fraction is similar to excess flux leaking
+        into the aperture, a fraction of the PRF of the target may not be captured in it.
+        To account for this missing fraction, the flux fraction is computed."""
 
         # Create new sorted target array based only on this
-        target_flatten_decending = target_flatten[descending_indices]
+        target_flux_sorted = self.target_flux[self.sort_index]
 
-        # Cumulative sum of this value as if adding pixels to the aperture
-        target_cumsum = np.cumsum(target_flatten_decending)
+        # compute cumulative sum and flux fraction
+        cumulative_FLFRCSAP = np.cumsum(target_flux_sorted) / target_flux_sorted.sum()
 
-        # Divite the target flux within the aperture by the total flux
-        cumulative_FLFRCSAP = target_cumsum / target_cumsum[-1:]
+        return cumulative_FLFRCSAP
 
-        return cumulative_FLFRCSAP, descending_indices
-
-    def _compute_cumulative_CROWDSAP(self):
+    def _compute_cumulative_CROWDSAP(self) -> np.ndarray:
         """This will calculate the CROWDSAP for an aperture that starts from the brightest pixel in the
         target PRF and then includes the second brightest and so on in decreasing value.
 
         The crowding metric reflects what fraction of the flux in the aperture is due to the target itself
         not the nearby light sources. Should be flux of source/total flux of everything."""
 
-        # Need to convert into flux first
-        model_prf_flux = self._compute_prf_flux()
-
-        # Grab the target from the prf cube and flatten the data
-        target_flatten = model_prf_flux[self.target_index].flatten()
-
-        # Sort by brightest to faintest
-        sort_index = np.argsort(target_flatten)
-
-        # Now decending values
-        descending_indices = sort_index[::-1]
-
         # Create new sorted target array based only on this
-        target_flatten_decending = target_flatten[descending_indices]
+        target_flux_sorted = self.target_flux[self.sort_index]
 
-        # Cumulative sum of this value as if you were adding pixels to the aperture
-        target_cumsum = np.cumsum(target_flatten_decending)
+        # Cumulative sum of this value as if you were adding pixels
+        target_cumsum = np.cumsum(target_flux_sorted)
 
-        # Add up flux for each pixel for every object in whole cube
-        model_prf_cube_sum = np.sum(model_prf_flux, axis=0)
-
-        # flatten
-        model_prf_cube_sum_flatten = model_prf_cube_sum.flatten()
-
-        # Cumulative sum on index from above
-        model_prf_cumsum = np.cumsum(model_prf_cube_sum_flatten[descending_indices])
+        # Cumulative sum of all signal (target + bkg) sorted by target pixel brightness
+        model_prf_cumsum = np.cumsum(self.scene_flux[self.sort_index])
 
         cumulative_CROWDSAP = target_cumsum / model_prf_cumsum
 
         return cumulative_CROWDSAP
 
-    def _compute_cumulative_signaltonoise(self):
+    def _compute_cumulative_SNR(
+        self, read_noise: float = 0.0, quantization_noise: float = 0.0
+    )-> np.ndarray:
         """This will calculate the S/N for an aperture that starts from the brightest pixel in the target
         PRF and then includes the second brightest and so on in decreasing value.
         The flux fraction is similar to excess flux leaking into the aperture, a fraction of the PRF of the
         target may not be captured in it.
         To account for this missing fraction, the flux fraction is computed."""
 
-        # Need to convert into flux first
-        model_prf_flux = self._compute_prf_flux()
-
-        # Grab only the target from the prf cube and flatten the data
-        target_flatten = model_prf_flux[self.target_index].flatten()
-
-        # Sort by brightest to faintest
-        sort_index = np.argsort(target_flatten)
-
-        # Decending values
-        descending_indices = sort_index[::-1]
-
         # Create new sorted target array based only on this
-        target_flatten_decending = target_flatten[descending_indices]
+        target_flux_sorted = self.target_flux[self.sort_index]
 
         # Cumulative sum of this value as if you were adding pixels to the aperture
-        target_cumsum = np.cumsum(target_flatten_decending)
+        target_cumsum = np.cumsum(target_flux_sorted)
 
-        noise = model_prf_flux[1:]
-        noise_sum = np.sum(noise, axis=0)
-        noise_flatten = noise_sum.flatten()
-        noise_cumsum = np.cumsum(noise_flatten[descending_indices])
+        # compute variance from the scene (all sources) model flux with Poisson noise
+        # adding read and quantization noise if provided
+        variance = self.scene_flux + read_noise**2 + quantization_noise**2
+        noise_cumsum = np.sqrt(np.cumsum(variance[self.sort_index]))
 
-        cumulative_SN = target_cumsum / noise_cumsum
+        cumulative_snr = target_cumsum / noise_cumsum
 
-        return cumulative_SN, descending_indices
-
-    def _get_local_minima(self,cumulative_SN):
-        """This code computes the local minima of the cumulative signal to noise."""
-
-        # Find indices of local minima
-        minima_indices = argrelextrema(cumulative_SN, np.less)
-
-        # It is likely there will be a large drop at 1 pixel as pixel 0 will contain the most flux
-        # We dont want 1 as the firt minima, as such removing
-        minima_indices_fix = np.array(
-            tuple(item for item in minima_indices[0] if item != 1)
-        )
-
-        return minima_indices_fix[0]
+        return cumulative_snr
 
 
-    def _calculate_dilution_factor(self,aperture):
-        #Calculates the dilution factor as a function of the aperture selected
-
-        # Convert into flux model
-        model_prf_flux = self._compute_prf_flux()
+    def compute_CROWDSAP(self, aperture) -> float:
 
         # Get sum of target flux in aperture
-        target_flux = model_prf_flux[self.target_index]
-        sum_target_flux = np.sum(model_prf_flux[self.target_index] * aperture)
+        sum_target_flux = np.sum(self.target_flux * aperture.ravel())
 
         # Get sum of all flux in aperture
-        all_flux = np.sum(model_prf_flux * aperture)
+        all_flux = np.sum(self.scene_flux * aperture.ravel())
 
-        Di = sum_target_flux/all_flux
+        Di = sum_target_flux / all_flux
 
         return Di
-    
-    def simple_aperture(self, completeness: float = 0.9):
 
+    def compute_FLFRCSAP(self, aperture) -> float:
+
+        # Get sum of target flux in aperture
+        sum_target_flux = np.sum(self.target_flux * aperture.ravel())
+
+        # Get sum of all flux in aperture
+        flux_frac = sum_target_flux / self.target_flux.sum()
+
+        return flux_frac
+
+    def simple_aperture(self, completeness: float = 0.9) -> Tuple[np.ndarray, float]:
         # Calclate the flux fraction
-        FLFRCSAP, descending_indices = self._compute_cumulative_FLFRCSAP()
+        FLFRCSAP = self._compute_cumulative_FLFRCSAP()
 
-        # Now you want to select the number of pixels based on the input completness from the user
-        index_pixel = np.where(FLFRCSAP >= completeness)
-        index_pixel = index_pixel[0][0]
-
-        # Get the initial data so you can determine correct size
-        target_data = self.model_prf[self.target_index]
+        # Now we want to select the number of pixels based on the input completeness
+        index_pixel = np.where(FLFRCSAP >= completeness)[0][0]
 
         # Create boolean array which is all false based on the above shape
-        all_false_array = np.full(target_data.shape, False, dtype=bool).flatten()
+        aperture_mask = np.full(self.target_flux.shape, False, dtype=bool).flatten()
 
         # Create masks which are true for index of descending_indices
-        indexes_to_set_true = descending_indices[0:index_pixel + 1]
+        indexes_to_set_true = self.sort_index[0 : index_pixel + 1]
+        aperture_mask[indexes_to_set_true] = True
 
-        for index in indexes_to_set_true:
-            all_false_array[index] = True
+        # Calculate Dilution factor
+        Di = self.compute_CROWDSAP(aperture_mask)
 
-        # Re-shape the array into what it was before so we can see what the mask looks like
-        simple_aperture = all_false_array.reshape(target_data.shape)
+        return aperture_mask.reshape(self.image_shape), Di
 
-        #Calculate Dilution factor
-        Di = self._calculate_dilution_factor(simple_aperture)
-        
-        
-        return simple_aperture, Di
+    def SNR_aperture(self, **kwargs) -> Tuple[np.ndarray, float]:
 
-    def strict_aperture(self):
+        cumulative_snr = self._compute_cumulative_SNR(**kwargs)
 
-        # Convert into flux model
-        model_prf_flux = self._compute_prf_flux()
+        # Find the exact number of pixels that maximizes the cumulative SNR
+        optimal_pixel_count = np.argmax(cumulative_snr) + 1
 
-        # Calculate the cumulative SN
-        cumulative_SN, descending_indices = self._compute_cumulative_signaltonoise()
+        # 6. Create the initial unconstrained optimal mask
+        optimal_indices = self.sort_index[:optimal_pixel_count]
+        aperture_mask = np.zeros_like(cumulative_snr, dtype=bool)
+        aperture_mask[optimal_indices] = True
 
-        # Calculate the minima
-        minima_indices = self._get_local_minima(cumulative_SN)
+        # Calculate Dilution factor
+        Di = self.compute_CROWDSAP(aperture_mask)
 
-        # Get the initial data so you can determine correct size
-        target_data = self.model_prf[self.target_index]
-
-        # Create boolean array which is all false based on the above shape
-        all_false_array = np.full(target_data.shape, False, dtype=bool).flatten()
-
-        # Create masks which are true for index of descending_indices
-        indexes_to_set_true = descending_indices[0: minima_indices + 1]
-
-        for index in indexes_to_set_true:
-            all_false_array[index] = True
-
-        # Re-shape the array into what it was before so we can see what the mask looks like
-        strict_aperture = all_false_array.reshape(target_data.shape)
-
-        #Calculate Dilution factor
-        Di = self._calculate_dilution_factor(strict_aperture)
-
-        return strict_aperture, Di
-    
+        return aperture_mask.reshape(self.image_shape), Di
 
     def balanced_aperture(
         self, crowding_metric: float = 0.8, fluxfrac_metric: float = 0.9
-    ):
-
-        # Convert model into flux model
-        model_prf_flux = self._compute_prf_flux()
+    )-> Tuple[np.ndarray, float]:
 
         # Calculate the cumulative crowdfrac
         crowding = self._compute_cumulative_CROWDSAP()
 
         # Calculate the cumulative fluxfrac
-        flfrac, idx = self._compute_cumulative_FLFRCSAP()
+        flfrac = self._compute_cumulative_FLFRCSAP()
 
         vals = []
         for a in range(len(crowding)):
@@ -247,16 +193,13 @@ class aperture:
                 vals.append(a)
 
         shape = self.model_prf.shape[1:]
-        all_false_array = np.full(shape, False, dtype=bool).flatten()
-        indexes_to_set_true = idx[vals]
+        aperture_mask = np.full(shape, False, dtype=bool).flatten()
+        indexes_to_set_true = self.sort_index[vals]
 
         for index in indexes_to_set_true:
-            all_false_array[index] = True
+            aperture_mask[index] = True
 
-        # Re-shape the array into what it was before so we can see what the mask looks like
-        balanced_aperture = all_false_array.reshape(shape)
+        # Calculate Dilution factor
+        Di = self.compute_CROWDSAP(aperture_mask)
 
-        #Calculate Dilution factor
-        Di = self._calculate_dilution_factor(balanced_aperture)
-        
-        return balanced_aperture, Di
+        return aperture_mask.reshape(self.image_shape), Di

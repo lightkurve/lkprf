@@ -1,10 +1,10 @@
 """PRF base class"""
 
 from abc import ABC, abstractmethod
-from typing import Tuple, List
+from typing import Tuple, List, Union, Optional
 import numpy.typing as npt
 import numpy as np
-from .aperture import aperture
+from .aperture import Aperture
 
 
 class PRF(ABC):
@@ -112,8 +112,9 @@ class PRF(ABC):
             roffset = int(r - r % 1)
             coffset = int(c - c % 1)
             # row and column position for source
-            R, C = np.arange(r1 + roffset, r2 + roffset), np.arange(
-                c1 + coffset, c2 + coffset
+            R, C = (
+                np.arange(r1 + roffset, r2 + roffset),
+                np.arange(c1 + coffset, c2 + coffset),
             )
             # check if pixels are in the resultant image
             k = (R >= origin[0]) & (R < (origin[0] + shape[0]))
@@ -150,80 +151,96 @@ class PRF(ABC):
         """
         self.check_coordinates(targets=targets, shape=shape)
         self._prepare_supersamp_prf(targets=targets, shape=shape)
-        #Need to define model_prf as a proprety of self here so it can be used in get_aperture
-        self.model_prf = self._evaluate(targets=targets, shape=shape, origin=origin, dx=0, dy=0)
+        # Need to define model_prf as a proprety of self here so it can be used in get_aperture
+        self.model_prf = self._evaluate(
+            targets=targets, shape=shape, origin=origin, dx=0, dy=0
+        )
         return self.model_prf
 
-    def get_aperture(self,
-                     aperture_type: str = "strict",
-                     completeness: float = 0.9,
-                     crowding_metric: float = 0.8,
-                     fluxfrac_metric: float = 0.9,
-                     target_index: int = 0,
-                     tess_mag = list[float]) -> float:
-
-        """Calculates an aperture for the user based on the PSF. The user may pick from three options depending on the
-        object of interest and the level of crowding.
+    def get_aperture(
+        self,
+        aperture_type: str = "snr",
+        completeness: float = 0.9,
+        crowding_metric: float = 0.5,
+        fluxfrac_metric: float = 0.9,
+        target_index: int = 0,
+        source_mag: Optional[Union[list[float], np.ndarray]] = None,
+        **kwargs,
+    ) -> np.ndarray:
+        """Calculates an aperture for the user based on the PSF. The user may pick from 
+        three options depending on the object of interest and the level of crowding.
 
         Parameters
         ----------
 
-        aperture_type : A string in which the user can specify the kind of aperture they want calculated. 
+        aperture_type : str
+            A string in which the user can specify the kind of aperture they want 
+            calculated.
+            - "snr": Based on the cumulative S/N of the target vs other objects in the 
+            data cube. Computes the local minima of the cumulative S/N and returns the 
+            pixel index for which this occurs. This is then used to create the aperture.
+            - "simple": Computed using the target prf model only. Calculates the cumulative 
+            relative flux and uses a completness parameter input by the user to 
+            determine the aperture.
+            - "balanced": This is computes the aperture based on user input crowdsap and 
+            flfrcsap values.
 
-        strict --> Based on the cumulative S/N of the target vs other objects in the data cube.
-        Computes the local minima of the cumulative S/N and returns the pixel index for which this occurs.
-        This is then used to create the aperture. 
-        simple --> Computed using the target prf model only. Calculates the cumulative relative flux and uses a completness
-                   parameter input by the user to determine the aperture.
-        balanced --> This is computes the aperture based on user input crowdsap and flfrcsap values.
-
-        completeness : Float
-            The relative fraction of flux within a given aperture divided by the total flux of the object. This value is used to
-            compute the simple aperture.
+        completeness : float
+            The relative fraction of flux within a given aperture divided by the total 
+            flux of the object. This value is used to compute the simple aperture.
         crowding_metric: Float
-            The crowding metric reflects what fraction of the flux in the aperture is due to the target itself not the nearby
-            light sources. Should be flux of source/total flux of everything in the prf data cube.
+            The crowding metric reflects what fraction of the flux in the aperture is 
+            due to the target itself not the nearby light sources. Should be flux of 
+            source/total flux of everything in the prf data cube.
         fluxfrac_metric: Float
-            The flux fraction is similar to excess flux leaking into the aperture, a fraction of the prf of the target may not
-            be captured in it. To account for this missing fraction, the flux fraction is computed.
+            The flux fraction is similar to excess flux leaking into the aperture, a 
+            fraction of the prf of the target may not be captured in it. To account 
+            for this missing fraction, the flux fraction is computed.
         target_index: int
             The index of the target within the prf data cube.
-        tess_mag: List[float])
-            The Tess magnitudes of all objects within the prf data cube. Magnitudes must be listed in the order present within the
-            data cube.
+        tess_mag: List[float] or np.ndarray
+            The Tess magnitudes of all objects within the prf data cube. Magnitudes 
+            must be listed in the order present within the data cube.
 
         Returns
         -------
         A boolean array which can be used as an aperture within lightkurve.
-        
+
         """
+        # in case no mission assigned (e.g. for for the abstract method) we use "generic"
+        if not hasattr(self, "mission"):
+            self.mission = "generic"
 
-        self.aperture_model = aperture(model_prf=self.model_prf, tess_mag=tess_mag, target_index=target_index)
+        self.aperture_model = Aperture(
+                    model_prf=self.model_prf, source_mag=source_mag, target_index=target_index, mission=self.mission,
+                )
 
-        #Want to restrict input of apertures to those allowed
-        allowed_apertures = ["strict", "simple", "balanced"]
+        # Want to restrict input of apertures to those allowed
+        allowed_apertures = ["snr", "simple", "balanced"]
 
-        if aperture_type in allowed_apertures:
-            
-            if (aperture_type == "strict") and (tess_mag is not None):
-
-                ap, Di = self.aperture_model.strict_aperture()
-
-            elif (aperture_type == "simple") and (completeness is not None) and (tess_mag is not None):
-
-                ap, Di = self.aperture_model.simple_aperture(completeness)
-                
-            elif (aperture_type == "balanced") and (crowding_metric is not None) and (fluxfrac_metric is not None) and (tess_mag is not None):
-
-                ap, Di = self.aperture_model.balanced_aperture(crowding_metric, fluxfrac_metric)
-
-            else:
-                print("You must specify which aperture type to generate and input relvant parameters")
-
+        if aperture_type not in allowed_apertures:
+            raise ValueError(
+                            f"User did not enter valid aperture type. Types allowed are {allowed_apertures}"
+                        )
+        # the simple aperture does not require extra info, only the PRF model for the target.
+        if aperture_type == "simple":
+            aperture_mask, _ = self.aperture_model.simple_aperture(completeness)
+        # to compute SNR optimal aperture we need to make sure we provide the source magnitudes
+        elif (aperture_type == "snr") and (source_mag is not None):
+            aperture_mask, _ = self.aperture_model.SNR_aperture(**kwargs)
+        # balance aperture uses crowding and completeness target, and source magnitudes
+        # to get accurate estimates of the metrics.
+        elif ((aperture_type == "balanced") and (source_mag is not None)):
+            aperture_mask, _ = self.aperture_model.balanced_aperture(
+                crowding_metric, fluxfrac_metric
+            )
         else:
-            print("User did not enter valid aperture type. Types allowed are 'strict', 'simple', and 'balanced'")
-            
-        return ap, Di  
+            raise TypeError(
+                f"You must provide relevant arguments for the requested aperture type {aperture_type}. "
+                "See documentation for more details."
+            )
+
+        return aperture_mask
 
     def gradient(
         self,
