@@ -167,40 +167,43 @@ class PRF(ABC):
         source_mag: Optional[Union[list[float], np.ndarray]] = None,
         **kwargs,
     ) -> np.ndarray:
-        """Calculates an aperture for the user based on the PSF. The user may pick from 
+        """
+        Calculates an aperture for the user based on the PRF. The user may pick from
         three options depending on the object of interest and the level of crowding.
 
         Parameters
         ----------
 
         aperture_type : str
-            A string in which the user can specify the kind of aperture they want 
+            A string in which the user can specify the kind of aperture they want
             calculated.
-            - "snr": Based on the cumulative S/N of the target vs other objects in the 
-            data cube. Computes the local minima of the cumulative S/N and returns the 
+            - "snr": Based on the cumulative S/N of the target vs other objects in the
+            data cube. Computes the local minima of the cumulative S/N and returns the
             pixel index for which this occurs. This is then used to create the aperture.
-            - "simple": Computed using the target prf model only. Calculates the cumulative 
-            relative flux and uses a completness parameter input by the user to 
+            - "simple": Computed using the target prf model only. Calculates the cumulative
+            relative flux and uses a completness parameter input by the user to
             determine the aperture.
-            - "balanced": This is computes the aperture based on user input crowdsap and 
+            - "balanced": This is computes the aperture based on user input crowdsap and
             flfrcsap values.
-
         completeness : float
-            The relative fraction of flux within a given aperture divided by the total 
+            The relative fraction of flux within a given aperture divided by the total
             flux of the object. This value is used to compute the simple aperture.
         crowding_metric: Float
-            The crowding metric reflects what fraction of the flux in the aperture is 
-            due to the target itself not the nearby light sources. Should be flux of 
+            The crowding metric reflects what fraction of the flux in the aperture is
+            due to the target itself not the nearby light sources. Should be flux of
             source/total flux of everything in the prf data cube.
         fluxfrac_metric: Float
-            The flux fraction is similar to excess flux leaking into the aperture, a 
-            fraction of the prf of the target may not be captured in it. To account 
+            The flux fraction is similar to excess flux leaking into the aperture, a
+            fraction of the prf of the target may not be captured in it. To account
             for this missing fraction, the flux fraction is computed.
         target_index: int
             The index of the target within the prf data cube.
-        tess_mag: List[float] or np.ndarray
-            The Tess magnitudes of all objects within the prf data cube. Magnitudes 
+        source_mag: List[float] or np.ndarray
+            The source magnitudes of all objects within the prf data cube. Magnitudes
             must be listed in the order present within the data cube.
+        **kwargs:
+            List of keyword arguments passed to Aperture.SNR_aperture are `read_noise` 
+            and `quantization_noise` to account for detector noise.
 
         Returns
         -------
