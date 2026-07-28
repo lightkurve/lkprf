@@ -74,7 +74,7 @@ class Aperture:
         self.target_index = target_index
         self.mission = mission
 
-        self.image_shape = self.model_prf.shape[1:]
+        self.image_shape = model_prf.shape[1:]
 
         # compute the scene model (cube) in flux units
         self.scene_flux_cube = self._compute_prf_flux()
@@ -177,12 +177,12 @@ class Aperture:
             'C' and 'D')
         quantization_noise : float, default 0.0
             Additional quantization-noise term in the same flux units as the
-            model. This noise is computed as:
+            model. This noise is computed as (Smith et al. 2016):
                 quant_noise = sqrt(n_c / 12) * (w/ 2 ^(n_b -1)) ** 2
             where n_c is the number of cadences in a co-added observation, w is the
             well depth of the detector, and n_b is the number of bits in the analog-to-digital
-            conversion (typically 14). The number of cadences is found in the 'NREADOUT'
-            header keyword.
+            conversion (14 for Kepler and 16 for TESS). The number of cadences is found 
+            in the 'NREADOUT' header keyword.
 
         Returns
         -------
