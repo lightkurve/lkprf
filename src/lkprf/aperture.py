@@ -181,7 +181,7 @@ class Aperture:
                 quant_noise = sqrt(n_c / 12) * (w/ 2 ^(n_b -1)) ** 2
             where n_c is the number of cadences in a co-added observation, w is the
             well depth of the detector, and n_b is the number of bits in the analog-to-digital
-            conversion (14 for Kepler and 16 for TESS). The number of cadences is found 
+            conversion (14 for Kepler and 16 for TESS). The number of cadences is found
             in the 'NREADOUT' header keyword.
 
         Returns

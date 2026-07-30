@@ -202,7 +202,7 @@ class PRF(ABC):
             The source magnitudes of all objects within the prf data cube. Magnitudes
             must be listed in the order present within the data cube.
         **kwargs:
-            List of keyword arguments passed to Aperture.SNR_aperture are `read_noise` 
+            List of keyword arguments passed to Aperture.SNR_aperture are `read_noise`
             and `quantization_noise` to account for detector noise.
 
         Returns
@@ -215,16 +215,19 @@ class PRF(ABC):
             self.mission = "generic"
 
         self.aperture_model = Aperture(
-                    model_prf=self.model_prf, source_mag=source_mag, target_index=target_index, mission=self.mission,
-                )
+            model_prf=self.model_prf,
+            source_mag=source_mag,
+            target_index=target_index,
+            mission=self.mission,
+        )
 
         # Want to restrict input of apertures to those allowed
         allowed_apertures = ["snr", "simple", "balanced"]
 
         if aperture_type not in allowed_apertures:
             raise ValueError(
-                            f"User did not enter valid aperture type. Types allowed are {allowed_apertures}"
-                        )
+                f"User did not enter valid aperture type. Types allowed are {allowed_apertures}"
+            )
         # the simple aperture does not require extra info, only the PRF model for the target.
         if aperture_type == "simple":
             aperture_mask, _ = self.aperture_model.simple_aperture(completeness)
@@ -233,7 +236,7 @@ class PRF(ABC):
             aperture_mask, _ = self.aperture_model.SNR_aperture(**kwargs)
         # balance aperture uses crowding and completeness target, and source magnitudes
         # to get accurate estimates of the metrics.
-        elif ((aperture_type == "balanced") and (source_mag is not None)):
+        elif (aperture_type == "balanced") and (source_mag is not None):
             aperture_mask, _ = self.aperture_model.balanced_aperture(
                 crowding_metric, fluxfrac_metric
             )
