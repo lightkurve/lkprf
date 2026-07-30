@@ -1,3 +1,9 @@
+1.1.2 (2026-07-30)
+=====================
+- Aperture module to compute aperture masks based on PRF models such as SNR-optimal and balanced aperture. 
+- Example tutorial on how to use the aperture module. 
+
+
 1.1.1 (2024-09-24)
 =====================
 - Updated pyproject.toml
