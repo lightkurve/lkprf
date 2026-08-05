@@ -177,7 +177,8 @@ class PRF(ABC):
             elif mission == "Kepler":
                 sat_limit = 1.75e5
             else:
-                # generic value (?) or should we allow user input?
+                # generic value or should we allow user input?
+                # raise warning? 
                 sat_limit = 1.5e5
 
             # saturate and bleed the prf flux 
