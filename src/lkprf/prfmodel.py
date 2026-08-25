@@ -6,6 +6,7 @@ import numpy.typing as npt
 import numpy as np
 from .utils import saturate_and_bleed
 
+
 class PRF(ABC):
     @abstractmethod
     def __init__(self):
@@ -111,8 +112,9 @@ class PRF(ABC):
             roffset = int(r - r % 1)
             coffset = int(c - c % 1)
             # row and column position for source
-            R, C = np.arange(r1 + roffset, r2 + roffset), np.arange(
-                c1 + coffset, c2 + coffset
+            R, C = (
+                np.arange(r1 + roffset, r2 + roffset),
+                np.arange(c1 + coffset, c2 + coffset),
             )
             # check if pixels are in the resultant image
             k = (R >= origin[0]) & (R < (origin[0] + shape[0]))
@@ -130,29 +132,32 @@ class PRF(ABC):
         shape: Tuple = (11, 11),
         saturate: bool = False,
         targets_flux: List[float] = [1.0],
-        saturation_limit : Optional[float] = None,
+        saturation_limit: Optional[float] = None,
     ):
         """
-                Interpolates the PRF model onto detector coordinates.
+        Interpolates the PRF model onto detector coordinates.
 
-                Parameters
-                ----------
-                targets : List of Tuples
-                    Coordinates of the targets
-                origin : Tuple
-                    The origin of the image, combined with shape this sets the extent of the image
-                shape : Tuple
-                    The shape of the image, combined with the origin this sets the extent of the image
-                saturate : bool
-                    Whether to apply saturation and bleed effects. This is applied to all targets in the PRF cube.
-                targets_flux : List[float]
-                    The expected total flux for each target used to scaled the PRF to Flux values
+        Parameters
+        ----------
+        targets : List of Tuples
+            Coordinates of the targets
+        origin : Tuple
+            The origin of the image, combined with shape this sets the extent of the image
+        shape : Tuple
+            The shape of the image, combined with the origin this sets the extent of the image
+        saturate : bool
+            Whether to apply saturation and bleed effects. This is done to all targets in the PRF cube.
+        targets_flux : List[float]
+            The expected total flux for each target used to scaled the PRF to Flux values
+        saturation_limit : float
+            Optional saturation limit value in the same units as `targets_flux`. This overwrites
+            the default values used for TESS (1e5 e/s) and Kepler (1.75e5 e/s).
 
-                Returns
-                -------
-                prf : 3D array
-                    Three dimensional array representing the PRF values parametrized by flux and centroids.
-                    Has shape (ntargets, shape[0], shape[1])
+        Returns
+        -------
+        prf : 3D array
+            Three dimensional array representing the PRF values parametrized by flux and centroids.
+            Has shape (ntargets, shape[0], shape[1])
         """
         self.check_coordinates(targets=targets, shape=shape)
         self._prepare_supersamp_prf(targets=targets, shape=shape)
