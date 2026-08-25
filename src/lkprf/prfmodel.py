@@ -1,7 +1,7 @@
 """PRF base class"""
 
 from abc import ABC, abstractmethod
-from typing import Tuple, List
+from typing import Tuple, List, Optional
 import numpy.typing as npt
 import numpy as np
 from .utils import saturate_and_bleed
@@ -130,6 +130,7 @@ class PRF(ABC):
         shape: Tuple = (11, 11),
         saturate: bool = False,
         targets_flux: List[float] = [1.0],
+        saturation_limit : Optional[float] = None,
     ):
         """
                 Interpolates the PRF model onto detector coordinates.
@@ -143,7 +144,7 @@ class PRF(ABC):
                 shape : Tuple
                     The shape of the image, combined with the origin this sets the extent of the image
                 saturate : bool
-                    Whether to apply saturation and bleed effects
+                    Whether to apply saturation and bleed effects. This is applied to all targets in the PRF cube.
                 targets_flux : List[float]
                     The expected total flux for each target used to scaled the PRF to Flux values
 
@@ -170,20 +171,21 @@ class PRF(ABC):
                 targets_flux = np.array(targets_flux)[:, None, None]
             prf_flux = model_prf * targets_flux
 
-            # define the saturation limit based on the mission
-            mission = getattr(self, "mission", None)
-            if mission == "TESS":
-                sat_limit = 1.0e5
-            elif mission == "Kepler":
-                sat_limit = 1.75e5
-            else:
-                # generic value or should we allow user input?
-                # raise warning? 
-                sat_limit = 1.5e5
+            # define the saturation limit based on the mission when not user provided
+            if saturation_limit is None:
+                mission = getattr(self, "mission", None)
+                if mission == "TESS":
+                    saturation_limit = 1.0e5
+                elif mission == "Kepler":
+                    saturation_limit = 1.75e5
+                else:
+                    raise ValueError(
+                        "Mission is not Kepler or TESS, please provide a valid `saturation_limit` value."
+                    )
 
-            # saturate and bleed the prf flux 
+            # saturate and bleed the prf flux for all targets in the cube
             model_prf = np.array(
-                [saturate_and_bleed(x, well_depth=sat_limit) for x in prf_flux]
+                [saturate_and_bleed(x, well_depth=saturation_limit) for x in prf_flux]
             )
         return model_prf
 
