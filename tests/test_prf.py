@@ -1,10 +1,11 @@
 """Test the PRFs"""
 
-import lkprf
-import numpy as np
-import matplotlib.pyplot as plt
-
 import os
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+import lkprf
 
 
 def is_github_actions():
@@ -18,16 +19,20 @@ def test_prfs():
         origin = (0, 0)
         shape = (21, 21)
         ar = prf.evaluate(targets=targets, origin=origin, shape=shape)
-        R, C = np.mgrid[: ar.shape[1], : ar.shape[2]] 
-        assert np.isclose(np.average(R.ravel(), weights=ar[0].ravel()), targets[0][1], atol=0.15)
-        assert np.isclose(np.average(C.ravel(), weights=ar[0].ravel()), targets[0][0], atol=0.15)
+        R, C = np.mgrid[: ar.shape[1], : ar.shape[2]]
+        assert np.isclose(
+            np.average(R.ravel(), weights=ar[0].ravel()), targets[0][1], atol=0.15
+        )
+        assert np.isclose(
+            np.average(C.ravel(), weights=ar[0].ravel()), targets[0][0], atol=0.15
+        )
         assert np.isclose(ar[0].sum(), 1)
         assert ar.shape == (1, *shape)
         if not is_github_actions():
             fig, ax = plt.subplots(figsize=(6, 5))
             im = ax.pcolormesh(
-                np.arange(origin[1], origin[1] + shape[1]) ,
-                np.arange(origin[0], origin[0] + shape[0]) ,
+                np.arange(origin[1], origin[1] + shape[1]),
+                np.arange(origin[0], origin[0] + shape[0]),
                 ar.sum(axis=0),
                 cmap="Greys_r",
                 vmin=0,
@@ -59,15 +64,56 @@ def test_prfs():
             assert (a[0] > 0).any()
 
 
+def test_saturated_prfs():
+    """Testing saturation and bleed column"""
+    for prf in [lkprf.KeplerPRF(channel=42), lkprf.TESSPRF(camera=1, ccd=1)]:
+        # we test the saturation is applied to both PRFs
+        targets = [(10, 10), (12, 12)]
+        origin = (0, 0)
+        shape = (21, 21)
+        # first source is saturated, second source is not
+        targets_flux = [4_330_805, 123_123]
+        ar = prf.evaluate(
+            targets=targets,
+            origin=origin,
+            shape=shape,
+            saturate=True,
+            targets_flux=targets_flux,
+        )
+
+        # check that PRF_flux max value is <= sat limit
+        limit = 1.75e5 if prf.mission == "Kepler" else 1.0e5
+        assert (ar <= limit).all()
+        # check bleed column length
+        length = 15 if prf.mission == "Kepler" else 20
+        assert np.isclose((ar[0].max(axis=1) == limit).sum(), length, atol=1)
+
+    # evaluate custom limit flux
+    targets_flux = [
+        2.89e6,
+    ]
+    targets = [(10, 10)]
+    saturation_limit = 2e5
+    ar = prf.evaluate(
+        targets=targets,
+        origin=origin,
+        shape=shape,
+        saturate=True,
+        targets_flux=targets_flux,
+        saturation_limit=saturation_limit,
+    )
+    assert (ar <= saturation_limit).all()
+
+
 def test_prf_version():
     # TESS has a different set of measurements for early (1-3) sectors.
-    # Check to make sure it is reading out different files. 
+    # Check to make sure it is reading out different files.
 
-    prf_sec1_3 = lkprf.TESSPRF(camera=1, ccd=1, sector= 1)
-    prf_sec4_plus = lkprf.TESSPRF(camera=1, ccd=1, sector= 14)
+    prf_sec1_3 = lkprf.TESSPRF(camera=1, ccd=1, sector=1)
+    prf_sec4_plus = lkprf.TESSPRF(camera=1, ccd=1, sector=14)
     # If not specified, should default to sector 4+ measurements
     prf_sec4_notspecified = lkprf.TESSPRF(camera=1, ccd=1)
-    
-    assert prf_sec1_3.date == '30-Jan-2019'
-    assert prf_sec4_plus.date == '01-May-2019'
-    assert prf_sec4_notspecified.date == '01-May-2019'
+
+    assert prf_sec1_3.date == "30-Jan-2019"
+    assert prf_sec4_plus.date == "01-May-2019"
+    assert prf_sec4_notspecified.date == "01-May-2019"

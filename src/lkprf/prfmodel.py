@@ -1,9 +1,10 @@
 """PRF base class"""
 
 from abc import ABC, abstractmethod
-from typing import Tuple, List
+from typing import Tuple, List, Optional
 import numpy.typing as npt
 import numpy as np
+from .utils import saturate_and_bleed
 
 
 class PRF(ABC):
@@ -111,8 +112,9 @@ class PRF(ABC):
             roffset = int(r - r % 1)
             coffset = int(c - c % 1)
             # row and column position for source
-            R, C = np.arange(r1 + roffset, r2 + roffset), np.arange(
-                c1 + coffset, c2 + coffset
+            R, C = (
+                np.arange(r1 + roffset, r2 + roffset),
+                np.arange(c1 + coffset, c2 + coffset),
             )
             # check if pixels are in the resultant image
             k = (R >= origin[0]) & (R < (origin[0] + shape[0]))
@@ -128,6 +130,9 @@ class PRF(ABC):
         targets: List[Tuple] = [(5.5, 5.5)],
         origin: Tuple = (0, 0),
         shape: Tuple = (11, 11),
+        saturate: bool = False,
+        targets_flux: List[float] = [1.0],
+        saturation_limit: Optional[float] = None,
     ):
         """
         Interpolates the PRF model onto detector coordinates.
@@ -140,6 +145,13 @@ class PRF(ABC):
             The origin of the image, combined with shape this sets the extent of the image
         shape : Tuple
             The shape of the image, combined with the origin this sets the extent of the image
+        saturate : bool
+            Whether to apply saturation and bleed effects. This is done to all targets in the PRF cube.
+        targets_flux : List[float]
+            The expected total flux for each target used to scaled the PRF to Flux values
+        saturation_limit : float
+            Optional saturation limit value in the same units as `targets_flux`. This overwrites
+            the default values used for TESS (1e5 e/s) and Kepler (1.75e5 e/s).
 
         Returns
         -------
@@ -149,7 +161,38 @@ class PRF(ABC):
         """
         self.check_coordinates(targets=targets, shape=shape)
         self._prepare_supersamp_prf(targets=targets, shape=shape)
-        return self._evaluate(targets=targets, shape=shape, origin=origin, dx=0, dy=0)
+        model_prf = self._evaluate(
+            targets=targets, shape=shape, origin=origin, dx=0, dy=0
+        )
+        if saturate:
+            # apply saturation and bleed effects
+            # scale the PRF by the expected flux, then apply saturation and bleed.
+            # but first we make sure targets_flux has the same length as targets
+            if len(targets_flux) != len(targets):
+                raise ValueError("Length of targets_flux must match length of targets")
+
+            # convert targets_flux to a 3d array (ntargets, 1, 1)
+            if isinstance(targets_flux, list):
+                targets_flux = np.array(targets_flux)[:, None, None]
+            prf_flux = model_prf * targets_flux
+
+            # define the saturation limit based on the mission when not user provided
+            if saturation_limit is None:
+                mission = getattr(self, "mission", None)
+                if mission == "TESS":
+                    saturation_limit = 1.0e5
+                elif mission == "Kepler":
+                    saturation_limit = 1.75e5
+                else:
+                    raise ValueError(
+                        "Mission is not Kepler or TESS, please provide a valid `saturation_limit` value."
+                    )
+
+            # saturate and bleed the prf flux for all targets in the cube
+            model_prf = np.array(
+                [saturate_and_bleed(x, well_depth=saturation_limit) for x in prf_flux]
+            )
+        return model_prf
 
     def gradient(
         self,
