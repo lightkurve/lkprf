@@ -1,6 +1,7 @@
 1.1.1 (2024-09-24)
 =====================
 - Updated pyproject.toml
+- Added function to optionally model saturation/bleed effects [#18]
 
 1.1.0 (2024-09-24)
 =====================
