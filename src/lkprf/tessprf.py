@@ -30,6 +30,7 @@ class TESSPRF(PRF):
         self.mission = "TESS"
         self.cache_dir = cache_dir
         self._prepare_prf()
+        #self._prfmodel = Null
 
     def __repr__(self):
         return f"TESSPRF Object [Camera {self.camera}, CCD {self.ccd}, Sector {self.sector}]"
