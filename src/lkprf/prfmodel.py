@@ -5,7 +5,7 @@ from typing import Tuple, List, Union, Optional
 import numpy.typing as npt
 import numpy as np
 from .aperture import Aperture
-
+from .utils import saturate_and_bleed
 
 class PRF(ABC):
     @abstractmethod
@@ -175,7 +175,7 @@ class PRF(ABC):
             # convert targets_flux to a 3d array (ntargets, 1, 1)
             if isinstance(targets_flux, list):
                 targets_flux = np.array(targets_flux)[:, None, None]
-            prf_flux = model_prf * targets_flux
+            prf_flux = self.model_prf * targets_flux
 
             # define the saturation limit based on the mission when not user provided
             if saturation_limit is None:
